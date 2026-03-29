@@ -1,0 +1,1144 @@
+Expense Management App Review – Executive
+Summary
+This  report  analyzes  the  given  expense‐management  wireframes  and  outlines  detailed
+recommendations. We map the current workflows (employee submission, manager approval, admin
+setup), UI fields and states, and identify edge cases. Key priorities include usability, security, auditability, 
+multi-currency  handling,  OCR-based  receipt  capture,  and  accessibility/scalability.  We  compare  leading
+systems (Expensify, SAP Concur, Zoho Expense, Ramp, Brex) on features, approval logic, currencies,
+OCR, role management, audit logs, and mobile UX
+. A feature comparison table is provided. We
+then list usability flaws in the wireframes (with severity) and fixes, backed by UX best-practice guidelines
+. Revised Mermaid flowcharts depict improved Employee, Manager and Admin processes. We
+suggest UI mockup-level changes (with priority), propose a refined data model (ER diagram) with
+validation  rules,  and  outline  security/compliance/audit  recommendations.  Implementation  effort  is
+estimated for each change. All assertions and designs reference official product documentation and UX
+research where available.
+Competitor Feature Comparison
+Feature /
+Capability
+Expensify
+SAP Concur
+Zoho
+Expense
+Ramp
+Brex
+Approval
+Workflows
+Customizable
+multi-level
+approvals with
+“Bulk” and
+“Advanced”
+modes
+.
+Supports
+“Approve or
+Forward” logic;
+admins can
+route reports
+to any
+approver.
+Approvals can
+be configured
+per-report
+(collect/submit)
+.
+Highly
+configurable
+multi-tier
+approval
+chains and
+rules
+(conditional,
+by amount,
+policy)
+.
+Enterprise
+workflow with
+audit trails.
+Requires
+heavy setup.
+Supports
+hierarchical
+(manager-
+based) and
+fully custom
+multi-step
+flows
+.
+Admins
+define
+simple,
+hierarchical
+or complex
+conditional
+flows (based
+on amount,
+project, etc)
+.
+Policy-driven
+approvals:
+admins set
+rules (by
+amount,
+department,
+vendor, etc)
+. An AI
+“Policy Agent”
+can auto-
+approve low-
+risk items.
+Users
+approve
+requests via
+Slack/Teams
+or web.
+Automated
+routing:
+supports
+multi-level
+flows.
+Employees
+can set
+approvers;
+custom rules
+(e.g. by tag or
+amount) via
+Brex’s admin
+portal. (Brex
+auto-collects
+receipts and
+matches them
+to expenses.)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+1
+
+Feature /
+Capability
+Expensify
+SAP Concur
+Zoho
+Expense
+Ramp
+Brex
+Multi-
+Currency
+Support
+Workspace-
+level default
+currency;
+receipts in any
+currency are
+OCR’d (150+
+currencies) and
+converted via
+Open
+Exchange
+Rates
+.
+For multiple
+regions, create
+separate
+workspaces
+per currency
+.
+Supports
+expenses in
+multiple
+currencies;
+uses internal
+exchange
+rates. Global
+reporting
+possible but
+setup-
+intensive.
+Exchange-rate
+features exist
+for reporting
+.
+International
+disbursements
+rely on
+banking
+partners.
+Can record
+expenses in
+any currency;
+admin adds
+allowed
+currencies
+and enables
+auto
+conversion
+. Foreign
+expenses are
+converted to
+base
+currency
+using real-
+time rates (or
+manually-set
+rates)
+.
+Global spend
+management
+with
+corporate
+card
+integration.
+Supports
+multi-
+currency
+cards and
+transactions.
+Real-time FX
+at close to
+interbank
+rates. (UX:
+receipt
+capture and
+coding is
+currency-
+aware via
+capture on
+swipe
+.)
+Designed for
+multinational
+companies: 
+“Add receipts in
+any language
+and currency,
+and Brex will
+use OCR to
+match them to
+the right
+expense.”
+.
+Cards and
+accounts can
+hold multiple
+currencies.
+Receipt
+Capture
+(OCR)
+SmartScan
+OCR mobile/
+web app: snap
+photo or email
+receipts.
+Extracts
+merchant,
+date, currency,
+amount (150+
+currencies)
+.
+Offline
+scanning
+queues
+receipts. Auto-
+matches
+receipts to card
+transactions
+. Policy
+rules can flag
+illegitimate
+items (alcohol,
+etc)
+.
+Mobile app
+allows on-the-
+go photo
+scanning; OCR
+and auto-
+import of
+emailed
+receipts. (SAP
+Concur’s
+innovative
+Snap &
+Capture.) In
+practice,
+receipts sync
+to expense
+lines.
+Auto-scan of
+receipts on
+mobile/
+desktop.
+Supports 14
+languages
+(multilingual
+OCR)
+ and
+parses multi-
+line itemized
+receipts into
+separate
+expense
+lines
+.
+Duplicate
+detection
+(same date/
+amount)
+alerts user
+. Also
+accepts
+emailed
+receipts.
+Automated
+capture: as
+soon as a
+card is
+swiped, Ramp
+automatically
+captures the
+receipt (via
+integration or
+user upload)
+and fills in
+description/
+category
+.
+Employees
+can snap/
+upload
+receipts via
+Ramp’s
+mobile/web
+interfaces or
+Slack/Teams.
+OCR-driven
+capture: Brex
+auto-collects
+receipts and
+uses OCR on
+any currency
+receipt
+.
+Users can
+forward email
+receipts.
+Multi-line
+items are
+parsed.
+Duplicate
+receipts are
+detected.
+13
+1
+14
+15
+16
+16
+17
+12
+13
+18
+19
+20
+2
+21
+22
+23
+12
+2
+
+Feature /
+Capability
+Expensify
+SAP Concur
+Zoho
+Expense
+Ramp
+Brex
+Role
+Management
+Predefined
+roles: Employee,
+Auditor, and 
+Workspace
+Admin
+.
+Employees
+submit
+expenses;
+Auditors/
+managers can
+review all;
+Admins
+manage
+workspace
+settings and
+override
+approvals
+.
+“Approver” role
+is granted via
+assignment.
+Custom roles
+not supported
+in classic (new
+Expensify
+allows some
+workflow
+roles).
+Enterprise
+roles: Admins
+(configure
+system),
+Approvers/
+Managers
+(handle
+approvals),
+Finance users,
+Auditors.
+Supports
+custom
+permission
+sets. Policy
+and security
+roles are
+granular (as
+part of SAP
+roles).
+Predefined 
+Submitter, 
+Approver, 
+Admin. Paid
+plans allow
+custom roles
+ with
+fine-grained
+permissions
+(which
+modules
+they can see/
+approve)
+.
+Users are
+assigned
+roles on
+invitation.
+Departments
+and
+managers
+can be
+configured.
+Role
+hierarchy:
+Admins (full
+rights),
+Managers
+(approve/
+manage
+subordinates),
+Finance (view/
+payout).
+Ramp’s AI
+“Policy Agent”
+can be
+assigned as
+virtual
+approver. All
+actions
+logged by
+role. Detailed
+RBAC in
+settings (via
+policy
+templates).
+Flexible roles:
+Admins (all-
+powerful),
+Team
+Approvers/
+Managers,
+and normal
+employees.
+Can define
+multiple
+approvers per
+employee.
+Roles control
+access to
+spend policies
+and reporting.
+Supports an
+unlimited
+number of
+custom roles
+via its admin
+interface.
+24
+25
+26
+26
+3
+
+Feature /
+Capability
+Expensify
+SAP Concur
+Zoho
+Expense
+Ramp
+Brex
+Audit Trail /
+Logs
+Comprehensive
+audit log of
+workspace
+activity. Recent
+update: every
+change
+(settings,
+expenses) is
+logged in a
+threaded audit
+trail for clarity
+.
+Administrators
+can download
+reports (PDFs)
+for audit
+purposes
+.
+Built-in audit
+rules and
+compliance
+engine. Every
+transaction
+(submission,
+approval, edit)
+is logged.
+Administrators
+see user view /
+proxy login
+and audit
+reports
+.
+Custom audit
+rules can flag
+out-of-policy
+items (Concur
+Audit Rules)
+.
+Expense-
+level audits:
+Zoho
+Expense
+automatically
+audits line-
+items against
+policies
+(receipt
+mismatch,
+duplicate,
+exchange-
+rate
+tampering,
+etc)
+. Full
+activity log:
+admins can
+run “Audit
+Trail” reports
+to see who
+created,
+edited,
+approved
+each
+expense
+.
+Full audit trail:
+every expense
+matched to
+policy with all
+approvals/
+comments
+recorded.
+Policies
+explicitly
+show why
+each expense
+was approved
+or flagged
+. Ramp’s
+system logs
+every action
+(capture, edit,
+approval) and
+ties it to the
+relevant
+policy rule
+and user
+.
+Detailed audit
+history: Brex
+provides
+timestamped
+logs of every
+action on an
+expense.
+Compliance
+features (e.g.
+VAT
+reporting). All
+receipts and
+approvals are
+stored
+centrally for
+audit. (Cites:
+“Consolidating
+onto Brex’s
+global cards…
+allows us to
+see and
+analyze spend
+across
+entities”
+.)
+27
+28
+7
+29
+30
+30
+31
+31
+32
+33
+4
+
+Feature /
+Capability
+Expensify
+SAP Concur
+Zoho
+Expense
+Ramp
+Brex
+Mobile
+Experience
+Full-featured
+iOS/Android
+app. Users
+scan receipts,
+submit reports,
+and review
+approvals on
+the go. Offline
+support (queue
+scans without
+Wi-Fi)
+.
+Mobile upload
+via camera,
+email, or SMS
+(text receipts to
+47777)
+.
+Push
+notifications on
+status changes.
+Robust mobile
+app suite
+(Concur
+Expense
+mobile). Users
+can scan
+receipts,
+capture
+mileage, and
+submit
+reports. Push
+approvals to
+managers.
+Offline
+capture syncs
+when online.
+(However,
+some users
+find Concur’s
+mobile UI
+complex.)
+Dedicated
+mobile apps
+(iOS/
+Android). On-
+the-go
+expensing:
+scan receipts
+with camera,
+create
+expenses,
+and submit
+reports.
+Mobile
+interface
+matches web
+functionality.
+Also
+supports
+notifications.
+Zoho’s
+receipt
+scanner app
+is highly
+rated
+.
+Mobile via
+Slack, Teams,
+SMS or Ramp
+app. Users
+submit
+receipts with
+a photo,
+instantly
+processed.
+Approvals can
+be done in
+mobile
+interfaces or
+chat. Mobile
+UX is minimal
+but functional
+(camera-
+driven with
+chatbots).
+Responsive
+web app
+complements
+mobile.
+iOS and
+Android apps
+with polished
+UX.
+Employees
+can instantly
+upload
+receipts from
+phone. Mobile
+dashboard
+shows
+available
+budget and
+pending
+approvals.
+Real-time
+push alerts
+when budgets
+are exceeded
+or items need
+review. (Brex
+emphasizes
+sleek app
+design.)
+Sources: Official docs and product pages
+.
+Usability Issues in Wireframes
+Analysis of the provided wireframe mockups reveals several UX problems:
+Unclear Field Labels and Grouping (High): Some input fields lack clear labels or explanations.
+For example, currency fields or tax fields are not clearly labeled or placed. Grouping related
+fields (amount, currency, category) into a single visual section is advised
+. Fix: Ensure every
+input has a visible label (not just placeholder text) and group fields logically (e.g. an “Expense
+Details” section). Use sufficient spacing or boxes to separate sections
+.
+Poor Layout and Hierarchy (High): The multi-column layout (desktop + mobile screens) may
+confuse users. Nielsen recommends a single-column flow where possible, as multi-column forms
+increase cognitive load
+. Fix: Redesign the form into a single-column vertical layout on
+desktop. Highlight the primary action (“Submit expense”) and clearly separate it from secondary
+actions. Use progressive disclosure (e.g. hide advanced fields initially).
+Missing Inline Validation and Error States (High): The wireframe lacks indication of validation.
+There is no visual feedback if a required field is missing or an entry is invalid (e.g. negative
+amount). Fix: Add real-time validation (e.g. error messages on blur for each field, red borders for
+invalid input) and a summary of issues on submit failure. Indicate required fields with asterisks
+or labels.
+Ambiguous Buttons and Labels (Medium): Buttons like “Upload” or “Submit” are not
+consistently labeled with their outcomes. It’s unclear if “Upload” saves or submits. Fix: Use clear
+34
+18
+35
+36
+1
+5
+13
+16
+2
+8
+11
+12
+30
+24
+7
+3
+• 
+37
+38
+4
+• 
+4
+• 
+• 
+5
+
+action labels (“Submit Expense”, “Save Draft”, “Attach Receipt”). Provide tooltips or help icons for
+any specialized fields (e.g. “Tax Amount”).
+No State Indicators or Confirmations (Medium): The mockups do not show what happens
+after submission. Users should see confirmation and status. Fix: After submit, display a
+confirmation banner (“Expense submitted”), and in the expense history list, show clear states
+(Pending, Approved, Rejected). Use colors/icons for status.
+Receipt Upload UX (Medium): The receipt upload area is generic. It’s unclear if users can drop
+multiple files, preview, or retry a failed upload. Fix: Provide a drag-and-drop area or camera icon.
+Show thumbnails of uploaded receipts. Allow re-upload or deletion. Indicate maximum file size/
+type.
+Currency & Conversion (Medium): The wireframe has an “Amount” and “Conversion” but lacks
+context. It’s not clear if the user must enter both or if conversion is automatic. Fix: If foreign
+currency is allowed, label fields as “Amount (original currency)” and “Equivalent in [base
+currency]”. Auto-calc conversion using real-time rates (as Expensify does
+). Otherwise gray
+out one field and auto-fill.
+Lack of Accessibility Considerations (Medium): No mention of accessibility. Color-coded status
+or instructions with only color cues hinder vision-impaired users. Fix: Ensure all text has sufficient
+contrast. Associate <label>  tags to inputs, and include descriptive alt text for any icons.
+Support keyboard-only navigation and screen readers (ARIA labels for custom widgets).
+Responsiveness and Mobile Differences (Low): The mockup does not show mobile-specific
+patterns. Complex tables and wide forms may not adapt. Fix: For mobile, collapse fields into one
+column, use large touch-friendly buttons, and allow camera capture. Consider a simplified
+mobile UX where possible (e.g. scanning receipts by default).
+Missing Error/Empty States (Low): The manager’s approval queue should handle “no pending
+expenses” gracefully. Fix: If the list is empty, show a friendly message (“No expenses to review”)
+rather than a blank screen.
+Severity Key: Critical = prevents key task; High = major friction; Medium = noticeable issue; Low = minor
+improvement. Where possible, cite NN/g principles
+. 
+Revised Workflow Diagrams
+Employee Flow: An employee submits expenses and tracks status. 
+flowchart TD
+  E[Employee] --> F(Fill Expense Form)
+  F --> |Attach Receipt, Enter Details| V{Validation Pass?}
+  V -- No --> F
+  V -- Yes --> SUB[Submit Expense Report]
+  SUB --> MA[Manager Approval Queue]
+  MA --> MAPP[Manager Reviews]
+  MAPP --> |Approve| FIN[Forward to Finance / Next Approver]
+  MAPP --> |Reject| E_rej[Notify Employee (Rejected)]
+  FIN --> FAPP{More Approvers?}
+  FAPP -- Yes --> FAPP2[Next Approver Reviews]
+  FAPP -- No --> ACC[Finance/Accounting Processes Reimbursement]
+  ACC --> E_pay[Notify Employee (Paid)]
+Manager Flow: A manager sees pending items and approves or rejects with comments. 
+• 
+• 
+• 
+1
+• 
+• 
+• 
+3
+4
+6
+
+flowchart TD
+  M[Manager] --> PQ[View Pending Queue]
+  PQ --> |Select Expense| D([View Expense Details])
+  D --> APR{Decision}
+  APR -- Approve --> CMT[Add Comment] --> SUBM[Submit Approval]
+  APR -- Reject --> CMT2[Add Rejection Reason] --> SUBR[Submit Rejection]
+  SUBM --> Next[Next Approver (if any)]
+  SUBR --> EmpNotify[Notify Employee of Rejection]
+Admin Flow: The admin configures the system and oversees all expenses. 
+flowchart TD
+  A[Admin] --> U(User Management)
+  U --> AddEmp[Add/Invite Employee]
+  U --> AddMgr[Assign Manager Relations]
+  A --> R(Role Config)
+  R --> DefineRoles[Define custom roles/permissions] --> AssignRoles
+  A --> P(Policy Setup)
+  P --> DefineRules[Set approval rules (amount, % quorum etc.)]
+  A --> ViewAll[View All Expenses/Reports]
+  A --> Override[Override any approval if needed]
+  A --> Audit[Review audit logs and reports]
+  Audit --> Generate[Generate compliance report]
+These flows ensure clear handoffs and states (e.g. Draft → Submitted → Pending → Approved/Rejected →
+Paid), improving on the original sketches’ ambiguity.
+Suggested UI Changes (Mockup-Level)
+Below are concrete UI refinements, each labeled Must/Should/Could by priority:
+Must: Use single-column forms with persistent labels. As NN/g advises, avoid placeholder-only
+labels and multi-column layouts
+. Fix: Move to a vertical layout; keep all labels outside inputs.
+Group related inputs (Amount & Currency, Category & Project, Dates) under headings (e.g.
+“Expense Details”)
+. 
+Must: Add inline validation and clear error messages. For example, after entering a negative
+amount or missing field, show an error next to that field. Fix: Implement real-time checks (e.g.
+amount >0, date ≠ future, receipt required over threshold). Highlight errors in red with text.
+Should: Clarify currency input. Show both original and base currency clearly. Fix: Add a currency
+selector next to “Amount”, and auto-calculate the base amount (with a lock icon if auto) or let
+user enter an exchange rate. Display “Total in [Base Currency]: ₹X.XX” live. Reference Expensify’s
+approach
+.
+Should: Improve receipt upload area. Fix: Replace generic icon with a drag/drop box or camera
+button. Show thumbnail of uploaded image. Allow multiple receipts per expense (if needed). Add
+a tooltip “Supported formats: PDF, JPG, PNG. Max 5MB.”
+Should: Enhance “Submit” button prominence and state. Fix: Make it a standout color (e.g.
+green) and disable it until required fields are valid. Show spinner or “Submitting…” after click. 
+• 
+4
+37
+• 
+• 
+1
+• 
+• 
+7
+
+Could: Provide a progress indicator or breadcrumb for multi-step flows. Fix: If submission spans
+pages (e.g. “Details” then “Review” then “Confirm”), show steps. Even for single page, a “X of Y”
+progress bar can reassure users.
+Must: Ensure accessibility compliance. Fix: All form fields must have associated <label>  tags.
+Use ARIA labels for custom components. Maintain contrast ≥4.5:1 for text. Ensure keyboard
+navigation (tab order logical) and screen-reader announcements for dynamic events (e.g.
+“Expense submitted”).
+Could: Mobile-specific adjustments. Fix: For mobile layouts, collapse inputs into one column,
+enlarge touch targets (buttons ≥44px), and use native camera integration to snap receipts. Omit
+non-critical fields (e.g. hide non-mandatory categories under “Advanced” toggle) to reduce
+clutter.
+Should: Add confirmation modals for destructive actions (e.g. delete expense or revoke
+submission). Fix: Before deleting an expense or rejecting without reason, prompt user “Are you
+sure?”
+Must: Label all required fields and use consistent date pickers. Fix: Mark mandatory fields with
+“*”. Use a unified date-picker control (with manual input fallback) to prevent format errors.
+These changes follow UX guidelines
+ and modern patterns in expense apps. 
+Proposed Data Model (ER Diagram)
+erDiagram
+    COMPANY ||--o{ USER : employs
+    COMPANY ||--o{ EXPENSE : owns
+    USER }|..|{ ROLE : has
+    USER ||--|{ EXPENSE : submits
+    USER ||--o{ EXPENSE_APPROVAL : approves
+    EXPENSE ||--|{ EXPENSE_APPROVAL : "has"
+    EXPENSE ||--o{ RECEIPT : attaches
+    EXPENSE_APPROVAL }|..|{ APPROVAL_STEP : follows
+    APPROVAL_STEP ||--|| APPROVAL_RULE : implements
+    EXPENSE ||--o{ APPROVAL_RULE : triggers
+    EXPENSE ||--|{ EXPENSE_ITEM : contains
+    EXPENSE_ITEM ||--|| CATEGORY : category_type
+    EXPENSE ||--o{ CURRENCY : uses
+Legend: Users  belong  to  Companies.  Each  User has  a  Role (Admin/Manager/Employee).  A  User
+submits many Expenses; each expense is in one Currency (with base currency per company). Receipts
+(images) attach to expenses. An Expense may have multiple Expense_Items (if itemized), each linked to
+a Category. 
+Approvals: Each expense traverses an approval chain. We model this via an Expense_Approval table
+(expense_id, approver_id, status, comment, timestamp). Custom Approval_Rules (triggered by amount,
+percentage or role) point to required Approval_Steps. A company can define multiple approval rules
+(e.g. “50% quorum or CFO approval”).
+Validations / Constraints:
+- Expense.amount and item.amount ≥ 0, required.
+- Expense.date must be ≤ today.
+- User.manager_id → User.id (self-referential). Prevent circular reporting.
+• 
+• 
+• 
+• 
+• 
+3
+8
+
+- Only users with role=Manager/Admin can appear as approvers. Enforce via business logic.
+- Receipt.upload file types restricted (pdf/png/jpg) and size limits on backend.
+-  Currency must  be  among  allowed  list  for  the  company.  Rates  fetched  via  external  API  (e.g.
+OpenExchangeRates). 
+This schema supports multi-level approvals and audit trails (timestamps on each approval record) and
+can scale to multiple companies and thousands of users.
+Security, Compliance, and Audit Recommendations
+Role-based  Access  Control  (RBAC): Enforce  strict  permissions.  Only  admins  should  access
+settings and define rules; managers only see their team’s expenses. Backend must verify every
+action against user’s role. (Principle of least privilege.)
+Data Encryption: Store sensitive data securely. Expense entries and attachments (receipts)
+should be encrypted at rest. Use HTTPS/TLS for all network communication.
+Audit Logging: Log all critical events: expense submission, edits, approvals/rejections, login
+attempts, rule changes. Each log entry should include user ID, timestamp, action details. These
+logs enable investigation of disputes and support regulatory audits. (Zoho’s audit feature
+and Ramp’s audit trail
+ illustrate the expectation of full traceability.)
+Currency & Compliance: For multi-currency, ensure exchange rates come from a trusted source
+(e.g. Open Exchange Rates used by Expensify
+). Record the rate used for each transaction to
+allow retrospective auditing. For VAT/GST compliance, capture tax/VAT numbers per receipt and
+integrate with tax rules (see Brex VAT tracking
+).
+Receipt  Management: Treat  scanned  receipts  as  financial  records.  Ensure  tamper-evident
+handling: once approved, prevent users from altering receipts. Maintain originals for audit (store
+checksums).
+Mobile App Security: If building a mobile interface, follow OWASP Mobile Top 10: use certificate
+pinning, secure storage (avoid plaintext), enforce short session timeouts. 
+GDPR/Privacy: If  operating  in  Europe,  allow  users  to  request  data  export/deletion.  Mask
+personal data in logs if not needed for audit.
+Testing and Compliance: Regularly test with real scenarios and, if needed, seek SOC2/ISO27001
+certification for data handling processes.
+Implementation & Effort Estimates
+We classify each major change as Low/Medium/High effort for engineering:
+Form layout rework: Low. Adjust CSS/HTML for single-column, add labels and grouping
+containers. 
+Input validation (client & server): Medium. Implement front-end checks and back-end field
+validation (e.g. numeric checks, required fields). 
+• 
+• 
+• 
+30
+31
+• 
+1
+39
+• 
+• 
+• 
+• 
+• 
+• 
+9
+
+Currency conversion integration: Medium. Call a currency API (e.g. ExchangeRate API) on-the-
+fly or on save. Cache rates. 
+Receipt OCR integration: High. Integrate a mobile/web scanning library or service. Expensify
+built SmartScan – alternatives include AWS Textract/Google Vision OCR. Ensuring accuracy (14
+languages, multi-line items) adds complexity. 
+Role/Approval logic: High. Implement configurable multi-step workflows. Requires data model
+changes, UI for setting rules (if not present), and dynamic approval routing engine. 
+Audit trail logging: Medium. Record all key actions in a logging system or audit table. If using a
+framework, enable built-in audit features (like record-versioning plugins). Ensure logs are
+immutable. 
+Mobile app/UI: High. Designing and coding responsive/mobile layouts or native apps.
+Implement camera upload and offline queueing. 
+Security hardening: Medium. Set up TLS, input sanitization, RBAC checks in each endpoint.
+Possibly use security audits. 
+Accessibility fixes: Low. Adjust HTML semantics, ARIA tags, color contrast. 
+Bulk-approval feature: Medium. Allow managers/admins to approve multiple reports at once. UI
+to select/deselect. (Expensify’s new bulk approvals
+.) 
+Notification system: Medium. Email/push notifications on status change. 
+Automated testing: Medium. Write unit/integration tests for currency, OCR, approvals.
+Overall, core improvements (form, validation, audit, roles) are Medium effort. Advanced features (OCR,
+mobile apps, dynamic approval engine) are High. Many tasks can be scoped and phased (e.g. launch
+minimal viable flow, then add OCR or mobile incrementally). 
+Sources: We referenced official product docs and UX research throughout. For example, NN/g’s advice
+on form layout
+ guided our UI fixes. Product docs (Expensify
+, Zoho
+, Ramp
+,
+Brex
+) informed the competitor comparison. Audit/best-practice recommendations draw on industry
+standards and vendor features
+. All suggestions assume flexibility in budget, technology, and
+scale as per instructions.
+Expensify Help
+https://help.expensify.com/articles/expensify-classic/workspaces/Set-Currency
+Receipt Scanning App - Scan Receipts Online | Zoho Expense
+https://www.zoho.com/us/expense/receipt-scanner-app/
+Few Guesses, More Success: 4 Principles to Reduce Cognitive Load in Forms - NN/G
+https://www.nngroup.com/articles/4-principles-reduce-cognitive-load/
+May 2025 Expensify Update: AI Receipts, PDFs, & More
+https://use.expensify.com/blog/may-2025-expensify-product-update-ai-receipt-detection-bulk-approvals-amp-pdf-downloads
+Concur vs Airwallex: A side by side comparison | 2025
+https://www.airwallex.com/uk/blog/concur-vs-airwallex
+Configuring Approvals | User Guide | Zoho Expense
+https://www.zoho.com/us/expense/help/configuring-approvals/
+Expense Management Software & Reporting Solution
+https://ramp.com/expense-management
+Global expense management for multinational companies
+https://www.brex.com/product/global
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+6
+• 
+• 
+3
+4
+1
+13
+8
+2
+11
+12
+30
+5
+1
+14
+2
+21
+22
+36
+3
+4
+37
+38
+5
+6
+27
+28
+7
+15
+35
+8
+9
+10
+11
+17
+23
+31
+32
+12
+33
+39
+10
+
+Track expenses in a snap with Expensify's receipt scanning app
+https://use.expensify.com/receipt-scanning-app
+Currencies | User Guide | Zoho Expense
+https://www.zoho.com/expense/help/setting-up-organization/currencies/
+Expensify Help
+https://help.expensify.com/articles/expensify-classic/workspaces/Change-member-workspace-roles
+Roles | User Guide | Zoho Expense
+https://www.zoho.com/us/expense/help/managing-users/create-roles/
+Audit Rules - Concur Expense - SAP Help Portal
+https://help.sap.com/docs/CONCUR_EXPENSE/
+bb83754b1c5541808d50c09901e11475/18834fe66f091014b9c6f7af97b6e9cd.html
+Audit | User Guide | Zoho Expense
+https://www.zoho.com/us/expense/help/managing-policies/audit/
+13
+18
+19
+20
+34
+16
+24
+25
+26
+29
+30
+11
