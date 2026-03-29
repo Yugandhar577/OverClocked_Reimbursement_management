@@ -3,14 +3,21 @@ import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import {
   extractReceiptAmount,
+  extractReceiptCurrency,
   extractReceiptDate,
+  extractReceiptTotals,
   extractReceiptVendor,
+  buildReceiptWarnings,
+  calculateReceiptConfidence,
 } from '../utils/ocr-parsing.js';
 
 interface OcrResult {
   rawText: string;
   parsedData: {
     amount?: number;
+    subtotal?: number;
+    tax?: number;
+    total?: number;
     currency?: string;
     date?: string;
     vendor?: string;
@@ -19,6 +26,7 @@ interface OcrResult {
       amount: number;
     }>;
     confidence: number;
+    warnings?: string[];
   };
 }
 
@@ -106,6 +114,7 @@ export class OcrService {
       rawText,
       parsedData: {
         amount: prediction.total_amount?.value,
+        total: prediction.total_amount?.value,
         currency: prediction.currency?.value,
         date: prediction.date?.value,
         vendor: prediction.supplier_name?.value,
@@ -114,6 +123,7 @@ export class OcrService {
           amount: item.total_amount,
         })),
         confidence: 0.9, // Mindee is generally high confidence
+        warnings: [],
       },
     };
   }
@@ -157,15 +167,22 @@ export class OcrService {
   }
 
   private parseRawText(text: string): OcrResult['parsedData'] {
+    const totals = extractReceiptTotals(text);
     const amount = extractReceiptAmount(text) ?? undefined;
+    const currency = extractReceiptCurrency(text) ?? undefined;
     const date = extractReceiptDate(text) ?? undefined;
     const vendor = extractReceiptVendor(text) ?? undefined;
 
     return {
       amount,
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      total: totals.total,
+      currency,
       date,
       vendor,
-      confidence: 0.6, // OCR.space with parsing has lower confidence
+      confidence: calculateReceiptConfidence(text),
+      warnings: buildReceiptWarnings(text),
     };
   }
 }

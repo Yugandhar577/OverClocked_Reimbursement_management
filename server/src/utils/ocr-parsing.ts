@@ -1,13 +1,44 @@
 const RECEIPT_LABEL_PATTERN =
-  /^(?:total|grand total|subtotal|tax|receipt|invoice|thank you|amount|balance due|cash|card|change|qty|quantity|price|item|date)\b/i;
-const CURRENCY_PREFIX_PATTERN =
-  /(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SEK|NZD|MXN|SGD|HKD|NOK|KRW|TRY|RUB|BRL|ZAR|[$\u20AC\u00A3\u00A5\u20B9])/i;
-const AMOUNT_PATTERN =
-  /(?:^|[\s:])(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SEK|NZD|MXN|SGD|HKD|NOK|KRW|TRY|RUB|BRL|ZAR|[$\u20AC\u00A3\u00A5\u20B9])?\s*([0-9]{1,3}(?:,[0-9]{3})+(?:\.\d{2})|[0-9]+\.\d{2})(?!\d)/gim;
-const LABELLED_AMOUNT_PATTERN =
-  /\b(?:grand\s*total|total|amount(?:\s*due)?|subtotal|tax|balance(?:\s*due)?)\b[:\s-]*(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SEK|NZD|MXN|SGD|HKD|NOK|KRW|TRY|RUB|BRL|ZAR|[$\u20AC\u00A3\u00A5\u20B9])?\s*([0-9]{1,3}(?:,[0-9]{3})+(?:\.\d{2})|[0-9]+\.\d{2})/gim;
+  /^(?:total|grand total|subtotal|tax|receipt|invoice|thank you|amount|balance due|cash|card|change|qty|quantity|price|item|date|time|table|server|cashier)\b/i;
+
+const CURRENCY_MATCHERS = [
+  { pattern: /\bUSD\b|US\$/i, code: 'USD' },
+  { pattern: /\bEUR\b|€/i, code: 'EUR' },
+  { pattern: /\bGBP\b|£/i, code: 'GBP' },
+  { pattern: /\bINR\b|Rs\.?|₹/i, code: 'INR' },
+  { pattern: /\bJPY\b|¥/i, code: 'JPY' },
+  { pattern: /\bAUD\b/i, code: 'AUD' },
+  { pattern: /\bCAD\b/i, code: 'CAD' },
+  { pattern: /\bCHF\b/i, code: 'CHF' },
+  { pattern: /\bCNY\b|RMB/i, code: 'CNY' },
+  { pattern: /\bSGD\b/i, code: 'SGD' },
+];
+
+const AMOUNT_CAPTURE =
+  '([0-9]{1,3}(?:,[0-9]{3})*(?:\\.\\d{2})|[0-9]+(?:\\.\\d{2}))';
+
+const LABELLED_AMOUNT_REGEXES = {
+  total: new RegExp(
+    `\\b(?:grand\\s*total|total(?:\\s*due)?|amount(?:\\s*due)?|net\\s*amount|balance(?:\\s*due)?|amount\\s*payable)\\b[:\\s-]*(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SGD|[$\\u20AC\\u00A3\\u00A5\\u20B9])?\\s*${AMOUNT_CAPTURE}`,
+    'gim'
+  ),
+  subtotal: new RegExp(
+    `\\b(?:subtotal|sub\\s*total|net\\s*sales|taxable\\s*amount)\\b[:\\s-]*(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SGD|[$\\u20AC\\u00A3\\u00A5\\u20B9])?\\s*${AMOUNT_CAPTURE}`,
+    'gim'
+  ),
+  tax: new RegExp(
+    `\\b(?:tax|vat|gst|cgst|sgst|service\\s*tax)\\b[:\\s-]*(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SGD|[$\\u20AC\\u00A3\\u00A5\\u20B9])?\\s*${AMOUNT_CAPTURE}`,
+    'gim'
+  ),
+};
+
+const AMOUNT_PATTERN = new RegExp(
+  `(?:^|[\\s:])(?:USD|EUR|GBP|INR|JPY|AUD|CAD|CHF|CNY|SGD|[$\\u20AC\\u00A3\\u00A5\\u20B9])?\\s*${AMOUNT_CAPTURE}(?!\\d)`,
+  'gim'
+);
+
 const ISO_DATE_PATTERN = /\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/g;
-const US_DATE_PATTERN = /\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/g;
+const SLASH_DATE_PATTERN = /\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/g;
 const MONTH_NAME_DATE_PATTERN =
   /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{4})\b/gi;
 const DAY_FIRST_MONTH_NAME_PATTERN =
@@ -39,6 +70,14 @@ const MONTHS: Record<string, number> = {
   dec: 11,
   december: 11,
 };
+
+type MonetaryField = 'subtotal' | 'tax' | 'total';
+
+export interface ReceiptTotals {
+  subtotal?: number;
+  tax?: number;
+  total?: number;
+}
 
 const toIsoDate = (year: number, month: number, day: number): string | null => {
   const date = new Date(Date.UTC(year, month, day));
@@ -81,27 +120,81 @@ const toTitleCase = (value: string): string =>
     .toLowerCase()
     .replace(/\b([a-z])/g, (_match, letter: string) => letter.toUpperCase());
 
-export const extractReceiptAmount = (text: string): number | null => {
+const collectAmounts = (text: string, pattern: RegExp): number[] => {
   const amounts: number[] = [];
 
-  for (const pattern of [LABELLED_AMOUNT_PATTERN, AMOUNT_PATTERN]) {
-    pattern.lastIndex = 0;
+  pattern.lastIndex = 0;
+  for (const match of text.matchAll(pattern)) {
+    const amount = parseAmount(match[1]);
 
-    for (const match of text.matchAll(pattern)) {
-      const amount = parseAmount(match[1]);
-
-      if (amount !== null) {
-        amounts.push(amount);
-      }
+    if (amount !== null) {
+      amounts.push(amount);
     }
   }
 
-  if (amounts.length === 0) {
+  return amounts;
+};
+
+const extractMonetaryField = (text: string, field: MonetaryField): number | null => {
+  const matches = collectAmounts(text, LABELLED_AMOUNT_REGEXES[field]);
+
+  if (matches.length === 0) {
     return null;
   }
 
-  return Math.max(...amounts);
+  if (field === 'tax') {
+    return Number(matches.reduce((sum, value) => sum + value, 0).toFixed(2));
+  }
+
+  return Math.max(...matches);
 };
+
+const looksLikeAddress = (line: string): boolean =>
+  /\b(?:street|st\.?|road|rd\.?|avenue|ave\.?|lane|ln\.?|floor|building|tower|mall|city|state|india|usa)\b/i.test(
+    line
+  );
+
+export const extractReceiptCurrency = (text: string): string | null => {
+  for (const matcher of CURRENCY_MATCHERS) {
+    if (matcher.pattern.test(text)) {
+      return matcher.code;
+    }
+  }
+
+  return null;
+};
+
+export const extractReceiptTotals = (text: string): ReceiptTotals => {
+  const subtotal = extractMonetaryField(text, 'subtotal') ?? undefined;
+  const tax = extractMonetaryField(text, 'tax') ?? undefined;
+  const labelledTotal = extractMonetaryField(text, 'total');
+
+  let total = labelledTotal ?? undefined;
+
+  if (total === undefined) {
+    const allAmounts = collectAmounts(text, AMOUNT_PATTERN);
+    if (allAmounts.length > 0) {
+      total = Math.max(...allAmounts);
+    }
+  }
+
+  if (subtotal === undefined && total !== undefined && tax !== undefined && total >= tax) {
+    return {
+      subtotal: Number((total - tax).toFixed(2)),
+      tax,
+      total,
+    };
+  }
+
+  return {
+    subtotal,
+    tax,
+    total,
+  };
+};
+
+export const extractReceiptAmount = (text: string): number | null =>
+  extractReceiptTotals(text).total ?? null;
 
 export const extractReceiptDate = (text: string): string | null => {
   ISO_DATE_PATTERN.lastIndex = 0;
@@ -112,15 +205,29 @@ export const extractReceiptDate = (text: string): string | null => {
     }
   }
 
-  US_DATE_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(US_DATE_PATTERN)) {
-    const isoDate = toIsoDate(
-      normalizeYear(Number(match[3])),
-      Number(match[1]) - 1,
-      Number(match[2])
-    );
-    if (isoDate) {
-      return isoDate;
+  SLASH_DATE_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(SLASH_DATE_PATTERN)) {
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    const year = normalizeYear(Number(match[3]));
+
+    const dayFirst = toIsoDate(year, second - 1, first);
+    const monthFirst = toIsoDate(year, first - 1, second);
+
+    if (first > 12 && dayFirst) {
+      return dayFirst;
+    }
+
+    if (second > 12 && monthFirst) {
+      return monthFirst;
+    }
+
+    if (dayFirst) {
+      return dayFirst;
+    }
+
+    if (monthFirst) {
+      return monthFirst;
     }
   }
 
@@ -149,7 +256,8 @@ export const extractReceiptVendor = (text: string): string | null => {
   const lines = text
     .split(/\r?\n/)
     .map(cleanVendorLine)
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 8);
 
   for (const line of lines) {
     if (RECEIPT_LABEL_PATTERN.test(line)) {
@@ -168,7 +276,11 @@ export const extractReceiptVendor = (text: string): string | null => {
       continue;
     }
 
-    if (CURRENCY_PREFIX_PATTERN.test(line) && !/[A-Za-z]{3,}/.test(line)) {
+    if (looksLikeAddress(line)) {
+      continue;
+    }
+
+    if (line.length < 3 || line.length > 60) {
       continue;
     }
 
@@ -176,4 +288,54 @@ export const extractReceiptVendor = (text: string): string | null => {
   }
 
   return null;
+};
+
+export const buildReceiptWarnings = (text: string): string[] => {
+  const warnings: string[] = [];
+  const totals = extractReceiptTotals(text);
+
+  if (!extractReceiptVendor(text)) {
+    warnings.push('Vendor name could not be extracted confidently.');
+  }
+
+  if (!extractReceiptDate(text)) {
+    warnings.push('Receipt date could not be extracted confidently.');
+  }
+
+  if (totals.total === undefined) {
+    warnings.push('Total amount could not be extracted confidently.');
+  }
+
+  if (!extractReceiptCurrency(text)) {
+    warnings.push('Currency could not be detected from the receipt text.');
+  }
+
+  return warnings;
+};
+
+export const calculateReceiptConfidence = (text: string): number => {
+  const totals = extractReceiptTotals(text);
+  let score = 0.2;
+
+  if (extractReceiptVendor(text)) {
+    score += 0.2;
+  }
+
+  if (extractReceiptDate(text)) {
+    score += 0.2;
+  }
+
+  if (totals.total !== undefined) {
+    score += 0.25;
+  }
+
+  if (extractReceiptCurrency(text)) {
+    score += 0.15;
+  }
+
+  if (totals.subtotal !== undefined || totals.tax !== undefined) {
+    score += 0.1;
+  }
+
+  return Number(Math.min(score, 0.95).toFixed(2));
 };

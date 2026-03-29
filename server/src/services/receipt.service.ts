@@ -8,17 +8,26 @@ import { logger } from '../utils/logger.js';
 import { BadRequestError, NotFoundError } from '../utils/errors.js';
 import {
   extractReceiptAmount,
+  extractReceiptCurrency,
   extractReceiptDate,
+  extractReceiptTotals,
   extractReceiptVendor,
+  buildReceiptWarnings,
+  calculateReceiptConfidence,
 } from '../utils/ocr-parsing.js';
 
 interface OcrResult {
   vendor?: string;
   amount?: number;
+  subtotal?: number;
+  tax?: number;
+  total?: number;
   currency?: string;
   date?: string;
   rawText?: string;
   items?: Array<{ description: string; amount: number }>;
+  confidence?: number;
+  warnings?: string[];
 }
 
 interface MindeeReceiptPrediction {
@@ -202,6 +211,7 @@ export class ReceiptService {
       return {
         vendor: prediction.supplier_name?.value,
         amount: prediction.total_amount?.value,
+        total: prediction.total_amount?.value,
         currency: prediction.locale?.currency,
         date: prediction.date?.value,
         rawText: JSON.stringify(prediction),
@@ -209,6 +219,8 @@ export class ReceiptService {
           description: item.description,
           amount: item.total_amount,
         })),
+        confidence: 0.9,
+        warnings: [],
       };
     } catch (error) {
       logger.error('Mindee OCR error', error);
@@ -247,11 +259,21 @@ export class ReceiptService {
         return null;
       }
 
+      const totals = extractReceiptTotals(parsedText);
+      const currency = extractReceiptCurrency(parsedText) ?? undefined;
+      const warnings = buildReceiptWarnings(parsedText);
+
       return {
         rawText: parsedText,
         amount: extractReceiptAmount(parsedText) ?? undefined,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        total: totals.total,
+        currency,
         date: extractReceiptDate(parsedText) ?? undefined,
         vendor: extractReceiptVendor(parsedText) ?? undefined,
+        confidence: calculateReceiptConfidence(parsedText),
+        warnings,
       };
     } catch (error) {
       logger.error('OCR.space error', error);
