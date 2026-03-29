@@ -1,200 +1,188 @@
 ---
 name: react-frontend-development
-description: Use when building or modifying a React frontend using React
-  18 + Vite with Tailwind, TanStack Query, Zustand, React Router v6, and
-  Axios. Enforces project structure, component patterns, data-fetching
-  rules, and UI constraints.
+description: Use when building or modifying the OverClocked React frontend with React 18, Vite, Tailwind CSS v3, React Router v6, Zustand, and the shared `client/src/api/*.api.js` contract. This guide enforces route structure, component boundaries, state usage, and desktop or mobile UI rules for the reimbursement system.
 ---
 
-# Skill: React Frontend Development
+# React Frontend Development
 
-## Stack
+## Canonical References
 
--   React 18 + Vite
--   Tailwind CSS (utility-first, no custom CSS unless unavoidable)
--   React Router v6 (client-side routing)
--   TanStack Query (server state, caching, background refetch)
--   Zustand (client-side UI state only --- not for server data)
--   Axios (HTTP client, base instance with interceptors)
+- `.AI/AGENT.md`
+- `.AI/Context/Frontend_Reference.md`
+- `.AI/Context/MVP.md`
+- `docs/implementation_plan.md`
 
----
+This file is a helper guide. The canonical docs above win on any conflict.
 
-## Project Structure
+## Approved Stack
 
-    src/frontend/
-    ├── src/
-    │   ├── components/        # shared, reusable UI components
-    │   │   ├── ui/            # primitives: Button, Badge, Spinner, etc.
-    │   │   └── layout/        # Navbar, Sidebar, PageWrapper
-    │   ├── features/          # feature-scoped folders (see below)
-    │   │   ├── events/        # event cluster list + detail
-    │   │   ├── summary/       # contrastive summary display
-    │   │   └── outlets/       # outlet profile cards
-    │   ├── hooks/             # shared custom hooks
-    │   ├── lib/               # axios instance, query client, constants
-    │   ├── pages/             # route-level components only — thin wrappers
-    │   └── App.tsx
+- React 18 functional components only
+- Vite
+- Tailwind CSS v3 utilities only
+- React Router v6
+- Zustand for shared client state
+- Axios through `client/src/api/*.api.js`
 
-**Feature folder structure (consistent across all features):**
+## Planned Frontend Structure
 
-    features/events/
-    ├── components/    # UI components scoped to this feature
-    ├── hooks/         # useEvents, useEventDetail, etc.
-    ├── api.ts         # all API calls for this feature
-    └── types.ts       # TypeScript types scoped to this feature
-
----
-
-## Component Rules
-
-### Naming
-
--   Components: PascalCase (`SummaryCard.tsx`)
--   Hooks: camelCase with `use` prefix (`useEventCluster.ts`)
--   API files: `api.ts` per feature
--   Types: `types.ts` per feature, re-export from feature index if
-    shared
-
-### Component shape
-
-``` tsx
-// Always typed props, never `any`
-interface SummaryCardProps {
-  clusterId: string
-  version: number
-  onExpand?: () => void
-}
-
-export function SummaryCard({ clusterId, version, onExpand }: SummaryCardProps) {
-  // ...
-}
+```text
+client/
+|-- public/
+|   |-- manifest.json
+|   `-- sw.js
+`-- src/
+    |-- api/
+    |   |-- auth.api.js
+    |   |-- company.api.js
+    |   |-- users.api.js
+    |   |-- departments.api.js
+    |   |-- categories.api.js
+    |   |-- expenses.api.js
+    |   |-- approvals.api.js
+    |   |-- comments.api.js
+    |   |-- notifications.api.js
+    |   `-- payments.api.js
+    |-- components/
+    |   |-- admin/
+    |   |-- mobile/
+    |   `-- shared/
+    |-- hooks/
+    |-- layouts/
+    |   |-- AuthLayout.jsx
+    |   |-- DesktopLayout.jsx
+    |   `-- MobileLayout.jsx
+    |-- pages/
+    |   |-- admin/
+    |   |-- employee/
+    |   `-- manager/
+    |-- stores/
+    `-- utils/
 ```
 
-### State rules
+## Route Groups
 
--   Server data (articles, summaries, clusters) → TanStack Query only,
-    never useState
--   UI state (modal open, selected tab, filter value) → useState or
-    Zustand
--   Never store derived data in state --- compute it from query results
-    inline
+- Shared auth: `/login`, `/signup`, `/forgot-password`
+- Admin desktop: `/admin/*`
+- Employee mobile: `/expenses/*`, `/scan`
+- Manager mobile: `/approvals/*`, `/team-expenses`
 
----
+Match these route groups before adding new pages or layouts.
 
-## Data Fetching Pattern
+## Component Boundaries
 
-``` tsx
-// features/events/hooks/useEventCluster.ts
-import { useQuery } from '@tanstack/react-query'
-import { fetchEventCluster } from '../api'
+- Page components are thin wrappers that assemble layouts, route params, and page-level composition
+- Reusable UI belongs in `components/`
+- Shared business logic belongs in hooks, stores, or API modules, not inside page files
+- Admin-only components stay under `components/admin/`
+- Employee or manager shared mobile components stay under `components/mobile/`
+- Cross-surface primitives such as `Button`, `Input`, `Modal`, and `StatusBadge` live under `components/shared/`
 
-export function useEventCluster(clusterId: string) {
-  return useQuery({
-    queryKey: ['cluster', clusterId],
-    queryFn: () => fetchEventCluster(clusterId),
-    staleTime: 60_000,
-    retry: 2,
-  })
-}
-```
+## Naming Rules
 
-``` tsx
-// In component
-const { data, isLoading, isError } = useEventCluster(clusterId)
+- Components: `PascalCase.jsx`
+- Hooks: `camelCase.js` with `use` prefix
+- Stores: `camelCase.js`
+- API files: `camelCase.api.js`
 
-if (isLoading) return <Spinner />
-if (isError) return <ErrorState />
-```
+## State Rules
 
-Never fetch in useEffect. Always use TanStack Query.
+- Shared auth, notification, and cross-route UI state can live in Zustand
+- Route-local form state, modal state, and temporary UI state should stay local to the component tree
+- Do not use Redux
+- Do not use Context API for app-wide state
+- Do not persist access tokens in `localStorage`
 
----
+## API Rules
 
-## Summary Display Rules
+- All HTTP calls go through `client/src/api/*.api.js`
+- Components and pages should never call axios directly
+- Keep API modules grouped by backend contract, not by screen name
+- Match the endpoint and status vocabulary defined in `docs/implementation_plan.md`
 
-Product-critical constraints:
+Example:
 
--   Render summary sections in fixed order:
-    1.  Widely Reported Facts\
-    2.  Differences in Focus\
-    3.  Only Some Outlets Mention\
-    4.  Claims / Assertions
--   Claims section must show outlet attribution
--   Never show a trust score, bias rating, or numerical outlet ranking
--   "Only Some Outlets Mention" label must never be renamed to
-    "Suppressed by" or "Ignored by"
--   Always show `updated X minutes ago` using `updated_at`
--   If summary status is `suppressed`, render a neutral placeholder
-    without exposing suppression reason
+```jsx
+// src/api/expenses.api.js
+import axios from "axios"
 
----
-
-## Loading & Error States
-
-Every data-dependent component must guard for:
-
-``` tsx
-if (isLoading) return <Spinner size="md" />
-if (isError) return <ErrorState message="Could not load summary" retry={refetch} />
-```
-
-Never render UI with undefined data.
-
----
-
-## API Layer
-
-``` ts
-// lib/axios.ts
-import axios from 'axios'
-
-export const api = axios.create({
+const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  timeout: 10_000,
+  withCredentials: true,
 })
 
-api.interceptors.response.use(
-  res => res,
-  err => {
-    // log to Sentry
-    return Promise.reject(err)
-  }
-)
-```
-
-``` ts
-// features/events/api.ts
-import { api } from '@/lib/axios'
-import type { EventCluster } from './types'
-
-export async function fetchEventCluster(id: string): Promise<EventCluster> {
-  const res = await api.get(`/clusters/${id}`)
-  return res.data
+export async function getExpenses(params = {}) {
+  const response = await api.get("/api/expenses", { params })
+  return response.data
 }
 ```
 
----
+```jsx
+// src/pages/employee/MyExpensesPage.jsx
+import { useEffect, useState } from "react"
+import { getExpenses } from "../../api/expenses.api"
 
-## Tailwind Rules
+export default function MyExpensesPage() {
+  const [expenses, setExpenses] = useState([])
+  const [status, setStatus] = useState("loading")
 
--   Use Tailwind utilities only
--   No inline styles or external CSS unless unavoidable
--   Responsive breakpoints:\
-    `sm:` 640px\
-    `md:` 768px\
-    `lg:` 1024px
--   Dark mode first
--   Do not hardcode colors --- use semantic tokens (`bg-card`,
-    `text-muted-foreground`, etc.)
+  useEffect(() => {
+    let active = true
 
----
+    getExpenses()
+      .then((data) => {
+        if (!active) return
+        setExpenses(data.items ?? [])
+        setStatus("ready")
+      })
+      .catch(() => {
+        if (!active) return
+        setStatus("error")
+      })
 
-## What Not To Do
+    return () => {
+      active = false
+    }
+  }, [])
 
--   No `any` types
--   No fetching inside `useEffect`
--   No business logic inside page components
--   No outlet ranking, trust scoring, or bias labeling in UI
--   No direct DOM manipulation
--   Do not create Zustand stores for data already owned by TanStack
-    Query
+  if (status === "loading") return <div>Loading expenses...</div>
+  if (status === "error") return <div>Could not load expenses.</div>
+
+  return <div>{expenses.length} expenses</div>
+}
+```
+
+## UI Rules By Surface
+
+### Admin Desktop
+
+- Use `DesktopLayout`
+- Favor tables, filters, summary cards, drill-down actions, and quick navigation
+- Keep sidebar filters and status badges consistent across admin pages
+- Expense and payment operations should feel audit-friendly and explicit
+
+### Employee And Manager Mobile
+
+- Use `MobileLayout`
+- Keep lists card-first and actions touch-friendly
+- Make receipt preview, OCR review, and approval history readable on narrow screens
+- Keep status progression obvious on detail screens
+
+## Required UX States
+
+Every implemented screen should account for:
+
+- initial loading
+- empty data
+- no results after filtering
+- validation failure
+- recoverable API error
+- destructive action confirmation when relevant
+
+## Frontend Do Nots
+
+- No inline styles
+- No CSS modules
+- No direct DOM manipulation unless unavoidable for browser APIs
+- No direct axios calls in components
+- No undocumented route prefixes or status values
+- No desktop-only assumptions on employee or manager flows

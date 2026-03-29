@@ -1,84 +1,115 @@
 # Frontend Reference
 
-## Design System (Tailwind CSS v3)
+## Experience Goals
 
-### Color Palette (in `tailwind.config.js`)
-```js
-colors: {
-  primary: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a5f' },
-  accent:  { 400: '#22d3ee', 500: '#06b6d4' },
-  success: { 500: '#10b981', 600: '#059669' },
-  warning: { 500: '#f59e0b', 600: '#d97706' },
-  danger:  { 500: '#ef4444', 600: '#dc2626' },
-  slate:   { 50: '#f8fafc', 100: '#f1f5f9', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
-}
-```
+- Admin and finance screens should feel like an Odoo-inspired operations workspace: dense information, strong filters, clear primary actions, and fast table workflows
+- Employee and manager screens should be mobile-first: single-column flows, large touch targets, and camera-first receipt capture
+- Clarity beats decoration: every important field needs a visible label, every workflow needs explicit status and error feedback, and every page needs empty and loading states
 
-### Typography
-- Font: `Inter` (Google Fonts)
-- Headings: `font-bold text-slate-900 dark:text-slate-100`
-- Body: `text-sm text-slate-600 dark:text-slate-300`
+## Styling Rules
 
-### Status Badge Colors (matching Odoo pills)
-| Status | Tailwind Classes |
-|--------|-----------------|
-| Draft | `bg-slate-100 text-slate-600` |
-| To Submit | `bg-blue-100 text-blue-700` |
-| Submitted | `bg-teal-100 text-teal-700` |
-| Pending Approval | `bg-amber-100 text-amber-700` |
-| Approved | `bg-green-100 text-green-700` |
-| Posted | `bg-green-200 text-green-800` |
-| Done | `bg-green-500 text-white` |
-| Rejected | `bg-red-100 text-red-700` |
-| Refused | `bg-red-500 text-white` |
-| In Payment | `bg-emerald-100 text-emerald-700` |
-| Paid | `bg-emerald-500 text-white` |
+- Use Tailwind CSS v3 utilities only
+- Do not use inline style objects or CSS modules
+- Default to a light enterprise palette built around warm neutrals, mauve brand surfaces, aqua success states, and amber exception states; dark mode is optional P2 work
+- Prefer semantic utility groupings and reusable component wrappers over repeated one-off class lists
+- Use Framer Motion sparingly for page reveals, card hover lift, and route transitions; avoid decorative motion loops
 
-## Component Conventions
+## Suggested Color Direction
 
-### File Naming
-- Components: `PascalCase.jsx` (e.g. `StatusBadge.jsx`)
-- Hooks: `camelCase.js` (e.g. `useAuth.js`)
-- Stores: `camelCase.js` (e.g. `authStore.js`)
-- API files: `camelCase.api.js` (e.g. `expense.api.js`)
+| Token | Usage | Value |
+|------|-------|-------|
+| `brand` | Main actions, active nav, priority surfaces | `#6D4262` |
+| `brand-soft` | Hover and selected backgrounds | `#F1E6EC` |
+| `aqua` | Positive progress and validation states | `#0F8F8A` |
+| `amber` | Review, finance, and exception emphasis | `#A05A1F` |
+| `canvas` | App background | `#F8F4F2` |
+| `panel` | Cards, tables, sidebars | `#FFFFFF` |
+| `border` | Table and form outlines | `#E8DDDE` |
+| `text-strong` | Headings and key values | `#1F1A1C` |
+| `text-muted` | Secondary labels | `#6D6467` |
+| `success` | Approved and paid states | `#15803D` |
+| `danger` | Rejected or destructive states | `#DC2626` |
 
-### Component Structure
-```jsx
-// imports
-// constants
-// component
-export default function ComponentName({ prop1, prop2 }) {
-  // hooks
-  // state
-  // handlers
-  // render
-}
-```
+## Layout Patterns
 
-### API Layer Pattern
-```jsx
-// api/expense.api.js
-import client from './client';
+| Surface | Layout | Notes |
+|---------|--------|-------|
+| Admin desktop | `AdminLayout` | Left sidebar, floating topbar, content width optimized for tables and filters |
+| Auth | `AuthLayout` | Shared login, signup, and reset flows |
+| Employee and manager mobile | `MobileLayout` | Sticky header and bottom nav, one-column forms, card-first lists |
 
-export const getExpenses = (params) => client.get('/expenses', { params });
-export const createExpense = (data) => client.post('/expenses', data);
-export const submitExpense = (id) => client.post(`/expenses/${id}/submit`);
-```
+## Shared UI Components
 
-## Odoo-Inspired UI Patterns to Implement
+| Component | Responsibility |
+|-----------|----------------|
+| `Button` | Primary, secondary, outline, destructive actions |
+| `Input` and `Select` | Labeled form controls with inline validation states |
+| `Modal` | Confirm destructive actions and focused edits |
+| `DataTable` | Sortable and filterable desktop data views |
+| `StatusBadge` | Color-coded state pill with readable text contrast |
+| `PageHeader` | Dense page title area with actions and section copy |
+| `PageTransition` | Route-level reveal wrapper with reduced-motion fallback |
+| `MetricCard` | KPI surfaces for admin summaries |
+| `ConfigurationTabs` | Shared switcher across admin configuration routes |
+| `SidebarFilters` | Odoo-style status and employee filter groups |
+| `CSVUploader` | Drag-drop upload, preview, validation summary |
+| `ApprovalRuleBuilder` | Ordered approver steps, toggles, and thresholds |
+| `OrgChart` | Hierarchy visualization for admin pages |
+| `NotificationBell` | In-app unread indicator and dropdown summary |
+| `ExpenseSummaryHeader` | Employee totals such as to submit, under review, and to reimburse |
+| `StatusPipeline` | Horizontal lifecycle component on detail views |
+| `ApprovalTimeline` | Vertical approval history for mobile detail views |
+| `ReceiptViewer` | Image or PDF preview next to form or detail content |
+| `CommentThread` | Send message, log note, and activity tabs |
 
-1. **Status Pipeline** — Horizontal stepper at top of expense detail: `To Report ▸ To Submit ▸ Submitted ▸ Approved ▸ Done`
-2. **Sidebar Filters** — Left sidebar with checkbox filters for Status + Employee (like Odoo's expense reports page)
-3. **Receipt Preview Panel** — Right-side panel showing PDF/image preview alongside expense form
-4. **Comment Thread** — Below expense detail: "Send message" | "Log note" | "Activities" tabs
-5. **Expense Split Modal** — Table showing line items with description, product, total, tax, employee columns + "Add a line" + "Split Expense" button
-6. **Summary Header** — Dollar amounts with arrows: `$X to submit ▸ $X under validation ▸ $X to be reimbursed`
-7. **Action Buttons** — Top-left with primary actions: "Create Report" (teal), "Attach Receipt" (outline), "Split Expense" (outline)
+## Form Rules
 
-## Responsive Strategy
+- Never rely on placeholder-only labels
+- Group related fields under clear section headings such as "Expense Details" and "Receipt Details"
+- Mark required inputs consistently
+- Validate early and show inline errors close to the relevant field
+- Disable submit actions only when the form state makes the reason obvious
+- For currency fields, show both original amount and company-base conversion clearly
 
-| Viewport | Layout | Navigation |
-|----------|--------|------------|
-| Desktop (≥1024px) | DesktopLayout — left sidebar + top header | Sidebar links |
-| Tablet (768–1023px) | DesktopLayout — collapsible sidebar | Hamburger menu |
-| Mobile (<768px) | MobileLayout — bottom nav bar + header | Bottom tab bar |
+## Status Badge Mapping
+
+| Status | Tailwind Direction |
+|--------|--------------------|
+| `draft` | muted gray |
+| `to_submit` | blue |
+| `submitted` | teal |
+| `pending_approval` | amber |
+| `approved` | green |
+| `rejected` | red |
+| `in_payment` | emerald tint |
+| `paid` | strong emerald |
+
+## Frontend Conventions
+
+- Components: `PascalCase.jsx`
+- Hooks: `camelCase.js`
+- Stores: `camelCase.js`
+- API files: `camelCase.api.js`
+- Desktop layout files live in `client/src/components/layout/`
+- Admin route files live in `client/src/pages/admin/`
+- Keep business logic out of route components when it can live in stores, hooks, or API helpers
+- All API access goes through `client/src/api/*.api.js`
+- Global state goes through Zustand stores only
+
+## Odoo-Inspired Patterns To Preserve
+
+1. Sidebar filter stacks for status, employee, and department slices
+2. Dense summary headers with operational totals
+3. Status pipelines at the top of detail pages
+4. Receipt preview beside the form on larger screens
+5. Comment and activity sections under the expense detail
+6. Fast top-level action buttons such as create, attach receipt, split, approve, and pay
+7. KPI cards with restrained motion and prominent number hierarchy
+
+## Accessibility and Responsive Baseline
+
+- Use real labels and helper text for custom controls
+- Keep text contrast high enough for status pills and table text
+- Ensure keyboard navigation works for tables, menus, and modals
+- Collapse desktop multi-column forms into one mobile column below tablet widths
+- Keep primary mobile actions within thumb reach and use touch targets that are easy to hit
