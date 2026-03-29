@@ -1,7 +1,7 @@
-import { Response, NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 import { expenseService } from '../services/expense.service.js';
 import { expenseFilterSchema } from '../validators/expense.validator.js';
-import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const getExpenses = async (
   req: AuthenticatedRequest,
@@ -10,7 +10,6 @@ export const getExpenses = async (
 ): Promise<void> => {
   try {
     const filters = expenseFilterSchema.parse(req.query);
-
     const result = await expenseService.getAll(
       req.user!.companyId,
       req.user!.userId,
@@ -36,6 +35,7 @@ export const getExpense = async (
   try {
     const expense = await expenseService.getById(
       req.params.id,
+      req.user!.companyId,
       req.user!.userId,
       req.user!.role
     );
@@ -119,14 +119,16 @@ export const submitExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.submit(
+    const result = await expenseService.submit(
       req.params.id,
-      req.user!.userId
+      req.user!.userId,
+      req.user!.companyId
     );
 
     res.json({
       success: true,
-      data: expense,
+      data: result.expense,
+      duplicateWarnings: result.duplicateWarnings,
       message: 'Expense submitted for approval',
     });
   } catch (error) {
@@ -134,7 +136,6 @@ export const submitExpense = async (
   }
 };
 
-// Expense Lines
 export const addLine = async (
   req: AuthenticatedRequest,
   res: Response,

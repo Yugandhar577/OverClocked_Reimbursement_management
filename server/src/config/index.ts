@@ -11,6 +11,10 @@ export const config = {
     url: process.env.DATABASE_URL || '',
   },
 
+  defaults: {
+    baseCurrency: process.env.DEFAULT_BASE_CURRENCY || 'USD',
+  },
+
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'default-access-secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
@@ -29,6 +33,12 @@ export const config = {
   externalApis: {
     mindeeApiKey: process.env.MINDEE_API_KEY || '',
     ocrSpaceApiKey: process.env.OCR_SPACE_API_KEY || '',
+  },
+
+  payment: {
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+    razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',

@@ -1,9 +1,18 @@
 import prisma from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateTokenPair, verifyRefreshToken, TokenPayload } from '../utils/jwt.js';
-import { UnauthorizedError, ConflictError, NotFoundError } from '../utils/errors.js';
-import { SignupInput, LoginInput, ChangePasswordInput } from '../validators/auth.validator.js';
+import { BadRequestError, UnauthorizedError, ConflictError, NotFoundError } from '../utils/errors.js';
+import {
+  SignupInput,
+  LoginInput,
+  ChangePasswordInput,
+  ResetPasswordInput,
+} from '../validators/auth.validator.js';
 import { UserRole, UserStatus } from '@prisma/client';
+import crypto from 'crypto';
+import { currencyService } from './currency.service.js';
+import { emailService } from './email.service.js';
+import { config } from '../config/index.js';
 
 export class AuthService {
   async signup(input: SignupInput) {
@@ -15,17 +24,9 @@ export class AuthService {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Determine base currency from country (simplified)
-    const currencyMap: Record<string, string> = {
-      'United States': 'USD',
-      'India': 'INR',
-      'United Kingdom': 'GBP',
-      'European Union': 'EUR',
-      'Japan': 'JPY',
-      'Canada': 'CAD',
-      'Australia': 'AUD',
-    };
-    const baseCurrency = currencyMap[country] || 'USD';
+    const baseCurrency =
+      (await currencyService.getCurrencyByCountry(country))?.code ||
+      config.defaults.baseCurrency;
 
     // Create company and admin user in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -85,6 +86,59 @@ export class AuthService {
       },
       tokens,
     };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return;
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = this.hashResetToken(rawToken);
+    const expiry = new Date(Date.now() + 60 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: hashedToken,
+        resetTokenExpiry: expiry,
+      },
+    });
+
+    const resetLink = `${config.clientUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    await emailService.sendPasswordResetEmail(user.email, user.firstName, resetLink);
+  }
+
+  async resetPassword(input: ResetPasswordInput) {
+    const hashedToken = this.hashResetToken(input.token);
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiry: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestError('Invalid or expired reset token');
+    }
+
+    const newPasswordHash = await hashPassword(input.newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newPasswordHash,
+        refreshToken: null,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
   }
 
   async login(input: LoginInput) {
@@ -236,6 +290,10 @@ export class AuthService {
       department: user.department,
       reportsTo: user.reportsTo,
     };
+  }
+
+  private hashResetToken(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
   }
 }
 

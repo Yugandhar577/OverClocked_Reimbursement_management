@@ -1,11 +1,16 @@
-import prisma from '../config/database.js';
-import { NotFoundError, BadRequestError } from '../utils/errors.js';
-import { config } from '../config/index.js';
-import { OcrStatus } from '@prisma/client';
-import { logger } from '../utils/logger.js';
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { OcrStatus } from '@prisma/client';
+import prisma from '../config/database.js';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger.js';
+import { BadRequestError, NotFoundError } from '../utils/errors.js';
+import {
+  extractReceiptAmount,
+  extractReceiptDate,
+  extractReceiptVendor,
+} from '../utils/ocr-parsing.js';
 
 interface OcrResult {
   vendor?: string;
@@ -16,13 +21,34 @@ interface OcrResult {
   items?: Array<{ description: string; amount: number }>;
 }
 
+interface MindeeReceiptPrediction {
+  supplier_name?: { value?: string };
+  total_amount?: { value?: number };
+  locale?: { currency?: string };
+  date?: { value?: string };
+  line_items?: Array<{ description: string; total_amount: number }>;
+}
+
+interface MindeeReceiptResponse {
+  document?: {
+    inference?: {
+      prediction?: MindeeReceiptPrediction;
+    };
+  };
+}
+
+interface OcrSpaceResponse {
+  ParsedResults?: Array<{
+    ParsedText?: string;
+  }>;
+}
+
 export class ReceiptService {
   async createReceipt(
     expenseId: string,
     file: Express.Multer.File,
     expenseLineId?: string
   ) {
-    // Verify expense exists
     const expense = await prisma.expense.findUnique({
       where: { id: expenseId },
     });
@@ -31,11 +57,10 @@ export class ReceiptService {
       throw new NotFoundError('Expense not found');
     }
 
-    // Calculate file checksum
     const fileBuffer = await fs.readFile(file.path);
     const checksum = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
-    const receipt = await prisma.receipt.create({
+    return prisma.receipt.create({
       data: {
         expenseId,
         expenseLineId,
@@ -47,8 +72,6 @@ export class ReceiptService {
         checksum,
       },
     });
-
-    return receipt;
   }
 
   async getById(receiptId: string) {
@@ -80,7 +103,6 @@ export class ReceiptService {
       throw new BadRequestError('Access denied');
     }
 
-    // Delete file from disk
     try {
       await fs.unlink(receipt.filePath);
     } catch (error) {
@@ -99,7 +121,6 @@ export class ReceiptService {
       throw new NotFoundError('Receipt not found');
     }
 
-    // Update status to processing
     await prisma.receipt.update({
       where: { id: receiptId },
       data: { ocrStatus: OcrStatus.PROCESSING },
@@ -108,12 +129,10 @@ export class ReceiptService {
     try {
       let result: OcrResult | null = null;
 
-      // Try Mindee first
       if (config.externalApis.mindeeApiKey) {
         result = await this.processMindeeOcr(receipt.filePath);
       }
 
-      // Fallback to OCR.space
       if (!result && config.externalApis.ocrSpaceApiKey) {
         result = await this.processOcrSpace(receipt.filePath);
       }
@@ -173,7 +192,7 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as MindeeReceiptResponse;
       const prediction = data.document?.inference?.prediction;
 
       if (!prediction) {
@@ -186,7 +205,7 @@ export class ReceiptService {
         currency: prediction.locale?.currency,
         date: prediction.date?.value,
         rawText: JSON.stringify(prediction),
-        items: prediction.line_items?.map((item: any) => ({
+        items: prediction.line_items?.map((item) => ({
           description: item.description,
           amount: item.total_amount,
         })),
@@ -221,19 +240,18 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as OcrSpaceResponse;
       const parsedText = data.ParsedResults?.[0]?.ParsedText;
 
       if (!parsedText) {
         return null;
       }
 
-      // Basic extraction from raw text
-      const amountMatch = parsedText.match(/\$?\s*([\d,]+\.?\d*)/);
-
       return {
         rawText: parsedText,
-        amount: amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : undefined,
+        amount: extractReceiptAmount(parsedText) ?? undefined,
+        date: extractReceiptDate(parsedText) ?? undefined,
+        vendor: extractReceiptVendor(parsedText) ?? undefined,
       };
     } catch (error) {
       logger.error('OCR.space error', error);

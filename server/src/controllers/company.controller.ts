@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { companyService } from '../services/company.service.js';
+import { currencyService } from '../services/currency.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const getCompany = async (
@@ -64,6 +65,23 @@ export const getStats = async (
     res.json({
       success: true,
       data: stats,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCurrencies = async (
+  _req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const currencies = await currencyService.getSupportedCurrencies();
+
+    res.json({
+      success: true,
+      data: currencies,
     });
   } catch (error) {
     next(error);

@@ -5,6 +5,8 @@ import { validateBody } from '../middleware/validate.js';
 import {
   signupSchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   changePasswordSchema,
 } from '../validators/auth.validator.js';
 
@@ -13,6 +15,8 @@ const router = Router();
 // Public routes
 router.post('/signup', validateBody(signupSchema), authController.signup);
 router.post('/login', validateBody(loginSchema), authController.login);
+router.post('/forgot-password', validateBody(forgotPasswordSchema), authController.forgotPassword);
+router.post('/reset-password', validateBody(resetPasswordSchema), authController.resetPassword);
 router.post('/refresh', authController.refreshToken);
 
 // Protected routes

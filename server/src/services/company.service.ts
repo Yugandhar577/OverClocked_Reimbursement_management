@@ -1,9 +1,10 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
 import {
+  CompanySettingsInput,
   CreateCompanyInput,
   UpdateCompanyInput,
-  CompanySettingsInput,
 } from '../validators/company.validator.js';
 
 export class CompanyService {
@@ -29,9 +30,17 @@ export class CompanyService {
   }
 
   async update(companyId: string, input: UpdateCompanyInput) {
+    const data: Prisma.CompanyUpdateInput = {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.country !== undefined && { country: input.country }),
+      ...(input.baseCurrency !== undefined && { baseCurrency: input.baseCurrency }),
+      ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
+      ...(input.settings !== undefined && { settings: input.settings as Prisma.InputJsonValue }),
+    };
+
     const company = await prisma.company.update({
       where: { id: companyId },
-      data: input,
+      data,
     });
 
     return company;
@@ -46,22 +55,17 @@ export class CompanyService {
       throw new NotFoundError('Company not found');
     }
 
-    const currentSettings = (company.settings as Record<string, unknown>) || {};
-    const mergedSettings = { ...currentSettings, ...settings };
+    const currentSettings = (company.settings as Prisma.JsonObject | null) || {};
+    const mergedSettings: Prisma.InputJsonObject = { ...currentSettings, ...settings };
 
     return prisma.company.update({
       where: { id: companyId },
-      data: { settings: mergedSettings },
+      data: { settings: mergedSettings as Prisma.InputJsonValue },
     });
   }
 
   async getStats(companyId: string) {
-    const [
-      userCount,
-      departmentCount,
-      categoryCount,
-      expenseStats,
-    ] = await Promise.all([
+    const [userCount, departmentCount, categoryCount, expenseStats] = await Promise.all([
       prisma.user.count({ where: { companyId } }),
       prisma.department.count({ where: { companyId } }),
       prisma.expenseCategory.count({ where: { companyId } }),
