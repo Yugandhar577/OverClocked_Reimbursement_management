@@ -14,6 +14,10 @@ import departmentRoutes from './routes/department.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import receiptRoutes from './routes/receipt.routes.js';
+import approvalRoutes, { approvalRuleRoutes } from './routes/approval.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import commentRoutes from './routes/comment.routes.js';
 
 const app = express();
 
@@ -39,6 +43,11 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/receipts', receiptRoutes);
+app.use('/api/approvals', approvalRoutes);
+app.use('/api/approval-rules', approvalRuleRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static(config.upload.uploadDir));

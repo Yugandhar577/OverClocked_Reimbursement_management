@@ -31,6 +31,12 @@ export const config = {
     ocrSpaceApiKey: process.env.OCR_SPACE_API_KEY || '',
   },
 
+  payment: {
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+    razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+  },
+
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 
   upload: {

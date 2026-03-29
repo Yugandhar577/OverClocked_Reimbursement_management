@@ -20,7 +20,7 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  if (config.upload.allowedMimeTypes.includes(file.mimetype)) {
+  if ((config.upload.allowedMimeTypes as readonly string[]).includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new BadRequestError(`File type ${file.mimetype} is not allowed`));

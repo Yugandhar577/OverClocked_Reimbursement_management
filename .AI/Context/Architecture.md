@@ -89,3 +89,11 @@ Both share the same React codebase, differentiated by React Router route groups 
 | ExchangeRate API | Currency conversion rates | Unlimited |
 | Razorpay | Reimbursement payouts | Sandbox free |
 | Gmail SMTP | Email notifications | Free |
+
+## Backend API Modules (Implemented)
+
+- `/api/approvals` - pending approvals and manager approve/reject actions
+- `/api/approval-rules` - approval rules CRUD for admin configuration
+- `/api/payments` - Razorpay order creation and signature verification
+- `/api/notifications` - list + mark-read notification endpoints
+- `/api/comments` - threaded expense comments and replies

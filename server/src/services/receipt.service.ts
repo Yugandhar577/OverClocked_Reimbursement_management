@@ -173,7 +173,7 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
       const prediction = data.document?.inference?.prediction;
 
       if (!prediction) {
@@ -221,7 +221,7 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
       const parsedText = data.ParsedResults?.[0]?.ParsedText;
 
       if (!parsedText) {
