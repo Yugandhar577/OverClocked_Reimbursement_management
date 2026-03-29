@@ -9,3 +9,13 @@ export async function getNotifications(params = {}) {
     unreadCount: response.data.unreadCount ?? 0,
   }
 }
+
+export async function markNotificationAsRead(notificationId) {
+  const response = await api.patch(`/api/notifications/${notificationId}/read`)
+  return response.data.data
+}
+
+export async function markAllNotificationsAsRead() {
+  const response = await api.patch('/api/notifications/read-all')
+  return response.data.data
+}

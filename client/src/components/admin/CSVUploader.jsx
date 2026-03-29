@@ -1,57 +1,57 @@
-import { FileSpreadsheet, UploadCloud } from 'lucide-react'
+import { Download, FileSpreadsheet, UploadCloud } from 'lucide-react'
 import { useRef } from 'react'
 import { Button } from '../ui/button.jsx'
 
-export function CSVUploader({ fileName, isBusy = false, onSelectFile }) {
+export function CSVUploader({
+  fileName,
+  isUploading = false,
+  onDownloadTemplate,
+  onSelectFile,
+}) {
   const inputRef = useRef(null)
 
-  const openPicker = () => {
-    inputRef.current?.click()
-  }
-
-  const handleFileChange = (event) => {
-    const nextFile = event.target.files?.[0]
-
-    if (nextFile && onSelectFile) {
-      onSelectFile(nextFile)
-    }
-
-    event.target.value = ''
-  }
-
   return (
-    <div className="surface-card flex min-h-[15rem] flex-col items-center justify-center border border-dashed border-brand-100/90 bg-[radial-gradient(circle_at_top,#fff_0%,#faf6f8_100%)] px-8 py-10 text-center">
-      <div className="rounded-2xl bg-brand-50 p-4 text-brand-800">
+    <div className="surface-card flex min-h-[15rem] flex-col items-center justify-center border border-dashed border-line bg-[#fcfcfd] px-8 py-10 text-center">
+      <div className="rounded-md bg-brand-50 p-4 text-brand-800">
         <UploadCloud className="h-7 w-7" />
       </div>
       <div className="mt-6 space-y-3">
-        <h3 className="font-display text-2xl font-bold tracking-[-0.03em] text-ink-950">
-          Upload your transaction manifest
+        <h3 className="text-2xl font-semibold tracking-[-0.03em] text-ink-950">
+          Upload expense records
         </h3>
         <p className="mx-auto max-w-md text-sm leading-6 text-ink-600">
-          Drag and drop your CSV or XLSX file here to begin the ingestion
-          process.
+          Upload a CSV file with employee email, title, amount, date, and optional category columns to create expense records in bulk.
         </p>
-        {fileName ? (
-          <p className="text-sm font-semibold text-brand-800">Selected: {fileName}</p>
-        ) : null}
       </div>
-      <div className="mt-7 flex flex-col items-center gap-3">
-        <Button disabled={isBusy} onClick={openPicker}>
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <Button disabled={isUploading} onClick={() => inputRef.current?.click()}>
           <FileSpreadsheet className="h-4 w-4" />
-          Browse files
+          {fileName ? 'Replace file' : 'Browse CSV'}
         </Button>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-ink-400">
-          Max file size: 25MB
-        </p>
+        <Button onClick={onDownloadTemplate} variant="secondary">
+          <Download className="h-4 w-4" />
+          Template
+        </Button>
+        <input
+          ref={inputRef}
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              onSelectFile?.(file)
+            }
+            event.target.value = ''
+          }}
+          type="file"
+        />
       </div>
-      <input
-        accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-        className="hidden"
-        onChange={handleFileChange}
-        ref={inputRef}
-        type="file"
-      />
+      <div className="mt-4 space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-ink-400">
+          CSV only, max 25MB
+        </p>
+        {fileName ? <p className="text-sm text-ink-600">Selected: {fileName}</p> : null}
+      </div>
     </div>
   )
 }

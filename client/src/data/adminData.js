@@ -1,5 +1,5 @@
 export const shellBrand = {
-  name: 'Disciplined Expense',
+  name: 'Disciplined Editor',
   subtitle: 'Enterprise Admin',
   initials: 'DE',
 }
@@ -424,9 +424,9 @@ export const paymentsData = {
       tone: 'neutral',
     },
     {
-      label: 'Connected Wallet',
-      value: 'Razorpay X',
-      note: 'ending in .... 8829',
+      label: 'Settled This Cycle',
+      value: 'Rs 2,84,120.00',
+      note: 'approved reimbursements already closed',
       tone: 'brand',
     },
   ],

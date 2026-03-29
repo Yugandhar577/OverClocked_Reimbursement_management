@@ -22,7 +22,7 @@ function mapPerson(node) {
 
   return {
     name: `${node.firstName} ${node.lastName}`.trim(),
-    title: node.position ?? node.email,
+    title: node.email,
     badge: humanizeEnum(node.role),
     initials: getInitials(node.firstName, node.lastName),
   }
@@ -47,7 +47,7 @@ export async function getHierarchyWorkspace() {
     departmentCounts.set(label, (departmentCounts.get(label) ?? 0) + 1)
   })
 
-  return {
+  const workspace = {
     departments: Array.from(departmentCounts.entries())
       .sort((left, right) => right[1] - left[1])
       .slice(0, 4)
@@ -67,29 +67,34 @@ export async function getHierarchyWorkspace() {
     },
     flatCount: formatCompactCount(flatUsers.length),
   }
+
+  return workspace
 }
 
 export async function getCsvImportWorkspace() {
   const response = await api.get('/api/companies/stats')
   const stats = response.data.data
-  const totalRows = Number(stats.users ?? 0) + Number(stats.departments ?? 0) + Number(stats.categories ?? 0)
+  const hasUsers = Number(stats.users ?? 0) > 0
 
   return {
-    manifest: 'employee-import.xlsx',
-    totalRows: formatCompactCount(totalRows),
-    readyRows: formatCompactCount(Math.max(totalRows - 1, 0)),
-    criticalError: 'Upload an XLSX or CSV employee manifest to preview hierarchy before creating accounts.',
+    manifest: 'No file selected',
+    totalRows: '0',
+    readyRows: '0',
+    criticalError: hasUsers
+      ? 'Select a CSV file to validate field mappings before importing.'
+      : 'Create employee accounts first, then upload a CSV for validation.',
     mappings: [
-      { field: 'Full Name', mappedTo: 'fullName', status: 'mapped' },
-      { field: 'Email', mappedTo: 'email', status: 'mapped' },
-      { field: 'Reports To', mappedTo: 'reportsTo', status: 'mapped' },
+      { field: 'Employee', mappedTo: 'Not mapped', status: 'pending' },
+      { field: 'Title', mappedTo: 'Not mapped', status: 'pending' },
+      { field: 'Amount', mappedTo: 'Not mapped', status: 'pending' },
+      { field: 'Expense Date', mappedTo: 'Not mapped', status: 'pending' },
     ],
-    previewRows: [
-      { date: 'Awaiting file', merchant: 'Upload required', amount: '-', status: 'Pending' },
-    ],
+    previewRows: [],
+    missingFields: ['Employee', 'Title', 'Amount', 'Expense Date'],
     tips: [
-      'The preview step extracts roles, positions, and reporting candidates before any accounts are created.',
-      'Finalize the import only after each employee has a valid manager assignment.',
+      'Use the import template to keep headers aligned with backend validation.',
+      'Ensure employee emails already exist in the directory before import.',
+      'Validate mappings before importing to avoid partial failures.',
     ],
   }
 }

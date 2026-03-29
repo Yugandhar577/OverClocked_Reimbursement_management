@@ -1,6 +1,5 @@
-import { MessageSquare, StickyNote, Trash2 } from 'lucide-react'
+import { MessageSquare, StickyNote } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs.jsx'
 import { Button } from '../ui/button.jsx'
 
 function flattenComments(comments = []) {
@@ -11,12 +10,13 @@ function flattenComments(comments = []) {
 }
 
 export function CommentThread({ comments = [], isSaving, onSubmit }) {
+  const [activeTab, setActiveTab] = useState('message')
   const [message, setMessage] = useState('')
   const [note, setNote] = useState('')
   const items = useMemo(() => flattenComments(comments), [comments])
 
   const handleSubmit = async (commentType) => {
-    const content = commentType === 'LOG' ? note.trim() : message.trim()
+    const content = commentType === 'LOG_NOTE' ? note.trim() : message.trim()
 
     if (!content) {
       return
@@ -27,7 +27,7 @@ export function CommentThread({ comments = [], isSaving, onSubmit }) {
       commentType,
     })
 
-    if (commentType === 'LOG') {
+    if (commentType === 'LOG_NOTE') {
       setNote('')
     } else {
       setMessage('')
@@ -35,63 +35,93 @@ export function CommentThread({ comments = [], isSaving, onSubmit }) {
   }
 
   return (
-    <section className="surface-card p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ink-500">Comment Thread</p>
-
-      <Tabs className="mt-4" defaultValue="message">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="message">Send message</TabsTrigger>
-          <TabsTrigger value="note">Log note</TabsTrigger>
-        </TabsList>
-
-        <TabsContent className="mt-4 space-y-3" value="message">
-          <textarea
-            className="min-h-28 w-full rounded-[22px] border border-line bg-white px-4 py-3 text-sm text-ink-950 shadow-soft outline-none transition focus:border-brand-500"
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder="Share context with approvers or collaborators."
-            value={message}
-          />
-          <Button disabled={isSaving} onClick={() => handleSubmit('MESSAGE')} size="sm">
-            <MessageSquare className="h-4 w-4" />
+    <section className="odoo-panel overflow-hidden">
+      <div className="border-b border-line px-4 pt-4">
+        <div className="flex items-end gap-2">
+          <button
+            className={activeTab === 'message' ? 'odoo-chatter-tab odoo-chatter-tab-active' : 'odoo-chatter-tab'}
+            onClick={() => setActiveTab('message')}
+            type="button"
+          >
             Send message
-          </Button>
-        </TabsContent>
-
-        <TabsContent className="mt-4 space-y-3" value="note">
-          <textarea
-            className="min-h-28 w-full rounded-[22px] border border-line bg-white px-4 py-3 text-sm text-ink-950 shadow-soft outline-none transition focus:border-brand-500"
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Leave an internal note for the audit trail."
-            value={note}
-          />
-          <Button disabled={isSaving} onClick={() => handleSubmit('LOG_NOTE')} size="sm" variant="secondary">
-            <StickyNote className="h-4 w-4" />
+          </button>
+          <button
+            className={activeTab === 'note' ? 'odoo-chatter-tab odoo-chatter-tab-active' : 'odoo-chatter-tab'}
+            onClick={() => setActiveTab('note')}
+            type="button"
+          >
             Log note
-          </Button>
-        </TabsContent>
-      </Tabs>
+          </button>
+          <button className="odoo-chatter-tab" type="button">
+            Activities
+          </button>
+        </div>
+      </div>
 
-      <div className="mt-5 space-y-3">
-        {items.length ? (
-          items.map((comment) => (
-            <div key={comment.id} className="rounded-[22px] bg-[#fbf7fa] px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-ink-950">
-                    {comment.author?.firstName} {comment.author?.lastName}
-                  </p>
-                  <p className="text-xs uppercase tracking-[0.18em] text-ink-500">
-                    {comment.commentType} • {new Date(comment.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                {comment.content === '[deleted]' ? <Trash2 className="h-4 w-4 text-ink-400" /> : null}
-              </div>
-              <p className="mt-3 text-sm leading-6 text-ink-700">{comment.content}</p>
-            </div>
-          ))
+      <div className="border-b border-line px-4 py-4">
+        {activeTab === 'message' ? (
+          <div className="space-y-3">
+            <textarea
+              className="min-h-28 w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink-950 outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Discuss the expense with approvers or collaborators..."
+              value={message}
+            />
+            <Button
+              className="!h-10 !rounded-md !px-4"
+              disabled={isSaving}
+              onClick={() => handleSubmit('MESSAGE')}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Send message
+            </Button>
+          </div>
         ) : (
-          <p className="rounded-[22px] bg-brand-50 px-4 py-4 text-sm leading-6 text-ink-700">
-            No conversation yet. The first message here becomes the expense’s mobile paper trail.
+          <div className="space-y-3">
+            <textarea
+              className="min-h-28 w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink-950 outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Record an internal note for the audit trail..."
+              value={note}
+            />
+            <Button
+              className="!h-10 !rounded-md !px-4"
+              disabled={isSaving}
+              onClick={() => handleSubmit('LOG_NOTE')}
+              variant="secondary"
+            >
+              <StickyNote className="h-4 w-4" />
+              Log note
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-5">
+        {items.length ? (
+          <div className="space-y-5">
+            {items.map((comment) => (
+              <div key={comment.id} className="flex gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-900">
+                  {(comment.author?.firstName?.[0] ?? 'U').toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-semibold text-ink-950">
+                      {comment.author?.firstName} {comment.author?.lastName}
+                    </span>
+                    <span className="text-ink-500">
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-7 text-ink-700">{comment.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm leading-7 text-ink-600">
+            No chatter yet. Use messages for collaborative discussion and notes for internal audit context.
           </p>
         )}
       </div>

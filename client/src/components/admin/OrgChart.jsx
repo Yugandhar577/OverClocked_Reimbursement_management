@@ -5,7 +5,7 @@ import { Button } from '../ui/button.jsx'
 
 function PersonCard({ person, compact = false }) {
   return (
-    <div className="rounded-[24px] border border-line bg-white px-5 py-4 shadow-soft">
+    <div className="rounded-md border border-line bg-white px-5 py-4 shadow-soft">
       <div className="flex items-center gap-3">
         <AvatarBadge
           className={compact ? 'h-10 w-10 rounded-xl' : undefined}
@@ -15,7 +15,7 @@ function PersonCard({ person, compact = false }) {
         <div className="min-w-0">
           <p className="truncate text-base font-bold text-ink-950">{person.name}</p>
           <p className="truncate text-sm text-ink-600">{person.title}</p>
-          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-400">
+          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-400">
             {person.badge}
           </p>
         </div>

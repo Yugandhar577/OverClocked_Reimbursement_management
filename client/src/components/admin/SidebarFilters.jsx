@@ -1,6 +1,4 @@
-import { Search } from 'lucide-react'
 import { AvatarBadge } from '../shared/AvatarBadge.jsx'
-import { Input } from '../ui/input.jsx'
 import { Button } from '../ui/button.jsx'
 import { cn } from '../../utils/cn.js'
 
@@ -10,7 +8,7 @@ export function SidebarFilters({
   footerActionLabel = 'New Expense',
 }) {
   return (
-    <aside className="surface-soft sticky top-24 flex h-fit w-full flex-col gap-8 p-6 lg:w-[18rem]">
+    <aside className="app-filters sticky top-24 flex h-fit w-full flex-col gap-6 lg:w-[18rem]">
       {action ? (
         <Button className="w-full justify-center gap-2" size="lg">
           {action}
@@ -18,7 +16,7 @@ export function SidebarFilters({
       ) : null}
       {sections.map((section) => (
         <div key={section.label} className="space-y-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
             {section.label}
           </p>
           {section.type === 'checkbox' ? (
@@ -40,45 +38,32 @@ export function SidebarFilters({
             </div>
           ) : null}
           {section.type === 'search-list' ? (
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                <Input className="pl-9" placeholder={section.placeholder} />
-              </div>
-              <div className="space-y-2">
-                {section.items.map((item) => (
-                  <button
-                    key={item.label}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-2xl px-3 py-2 text-left transition',
-                      item.active ? 'bg-white shadow-soft' : 'hover:bg-white/60',
-                    )}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-3">
-                      <AvatarBadge
-                        className="h-8 w-8 rounded-xl text-[10px]"
-                        initials={item.initials}
-                        toneClass={
-                          item.active
-                            ? 'bg-aqua-100 text-aqua-700'
-                            : 'bg-brand-100 text-brand-700'
-                        }
-                      />
-                      <span
-                        className={
-                          item.active ? 'font-semibold text-ink-950' : 'text-ink-700'
-                        }
-                      >
-                        {item.label}
-                      </span>
-                    </div>
-                    {item.count ? (
-                      <span className="text-xs text-ink-500">{item.count}</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-2">
+              {section.items.map((item) => (
+                <div
+                  key={item.label}
+                  className={cn(
+                    'flex w-full items-center justify-between rounded-md px-3 py-2 text-left',
+                    item.active ? 'bg-white shadow-soft' : 'bg-transparent',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <AvatarBadge
+                      className="h-8 w-8 rounded-xl text-[10px]"
+                      initials={item.initials}
+                      toneClass={
+                        item.active
+                          ? 'bg-aqua-100 text-aqua-700'
+                          : 'bg-brand-100 text-brand-700'
+                      }
+                    />
+                    <span className={item.active ? 'font-semibold text-ink-950' : 'text-ink-700'}>
+                      {item.label}
+                    </span>
+                  </div>
+                  {item.count ? <span className="text-xs text-ink-500">{item.count}</span> : null}
+                </div>
+              ))}
             </div>
           ) : null}
           {section.type === 'pills' ? (
@@ -86,7 +71,7 @@ export function SidebarFilters({
               {section.items.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-600"
+                  className="rounded-md border border-line bg-white px-3 py-1 text-xs font-medium text-ink-600"
                 >
                   {item}
                 </span>
@@ -95,11 +80,13 @@ export function SidebarFilters({
           ) : null}
         </div>
       ))}
-      <div className="mt-auto border-t border-line/60 pt-6">
-        <Button className="w-full" size="lg" variant="default">
-          {footerActionLabel}
-        </Button>
-      </div>
+      {footerActionLabel ? (
+        <div className="mt-auto border-t border-line/60 pt-4">
+          <Button className="w-full" size="lg" variant="default">
+            {footerActionLabel}
+          </Button>
+        </div>
+      ) : null}
     </aside>
   )
 }

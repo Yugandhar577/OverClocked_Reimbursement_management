@@ -3,8 +3,6 @@
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
 @import '@fontsource/inter/900.css';
-@import '@fontsource/public-sans/600.css';
-@import '@fontsource/public-sans/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -12,11 +10,8 @@
 
 @layer base {
   :root {
-    color: #1b1c1c;
-    background:
-      radial-gradient(circle at top right, rgba(135, 90, 123, 0.07), transparent 30%),
-      radial-gradient(circle at left 20%, rgba(8, 124, 122, 0.08), transparent 35%),
-      linear-gradient(180deg, #fdfbf9 0%, #fbf8f7 48%, #f8f4f2 100%);
+    color: #2f3640;
+    background: #f5f6f8;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -28,7 +23,7 @@
   }
 
   html {
-    @apply bg-canvas scroll-smooth;
+    @apply bg-canvas scroll-smooth font-sans;
   }
 
   body {
@@ -53,30 +48,210 @@
 
 @layer components {
   .surface-card {
-    @apply rounded-[28px] border border-white/50 bg-white/90 shadow-card backdrop-blur;
+    @apply rounded-md border border-line bg-white shadow-soft;
   }
 
   .surface-soft {
-    @apply rounded-[24px] border border-brand-100/80 bg-[#f7f3f1]/85 shadow-soft;
+    @apply rounded-md border border-line bg-[#f7f8fa] shadow-soft;
   }
 
   .section-eyebrow {
-    @apply font-display text-[11px] font-semibold uppercase tracking-[0.32em] text-brand-700;
+    @apply font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500;
   }
 
   .section-title {
-    @apply font-display text-[2rem] font-bold tracking-[-0.04em] text-ink-950;
+    @apply font-sans text-[2.2rem] font-semibold tracking-[-0.04em] text-ink-950;
   }
 
   .section-copy {
     @apply text-sm leading-6 text-ink-700;
   }
 
-  .ghost-grid {
-    background-image:
-      linear-gradient(to right, rgba(135, 90, 123, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(135, 90, 123, 0.05) 1px, transparent 1px);
-    background-size: 32px 32px;
+  .odoo-shell {
+    @apply min-h-screen bg-canvas text-ink-950;
+  }
+
+  .odoo-topbar {
+    @apply border-b border-line bg-white;
+  }
+
+  .odoo-topbar-inner {
+    @apply mx-auto flex h-12 w-full max-w-[1580px] items-center justify-between gap-4 px-4 lg:px-6;
+  }
+
+  .odoo-subbar {
+    @apply border-b border-line bg-[#fcfcfd];
+  }
+
+  .odoo-subbar-inner {
+    @apply mx-auto flex min-h-[52px] w-full max-w-[1580px] flex-wrap items-center gap-3 px-4 py-2.5 lg:px-6;
+  }
+
+  .odoo-tab {
+    @apply inline-flex items-center border-b-2 border-transparent px-1 py-3 text-[14px] font-medium text-ink-700;
+  }
+
+  .odoo-tab-active {
+    @apply border-brand-700 text-ink-950;
+  }
+
+  .odoo-app-icon {
+    background:
+      linear-gradient(135deg, #35b4ff 0%, #0b97ff 100%);
+    @apply relative grid h-8 w-8 place-items-center rounded-md shadow-soft;
+  }
+
+  .odoo-app-icon::before,
+  .odoo-app-icon::after {
+    content: '';
+    @apply absolute rounded-full bg-white/95;
+  }
+
+  .odoo-app-icon::before {
+    width: 8px;
+    height: 8px;
+    left: 6px;
+    top: 6px;
+    box-shadow: 10px 6px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .odoo-app-icon::after {
+    width: 6px;
+    height: 6px;
+    left: 11px;
+    top: 16px;
+  }
+
+  .odoo-action-button {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-line bg-[#eef1f5] px-3 text-sm font-medium text-ink-800;
+  }
+
+  .odoo-primary-button {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-brand-900 bg-brand-900 px-3 text-sm font-medium text-white;
+  }
+
+  .odoo-toolbar-input {
+    @apply h-9 rounded-md border border-line bg-white px-3 text-sm text-ink-800 outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-100;
+  }
+
+  .odoo-panel {
+    @apply rounded-md border border-line bg-white shadow-soft;
+  }
+
+  .odoo-kpi {
+    @apply flex min-h-[96px] items-center justify-center border-r border-line bg-white px-6 text-center last:border-r-0;
+  }
+
+  .odoo-table {
+    @apply w-full border-separate border-spacing-0 text-sm;
+  }
+
+  .odoo-table thead th {
+    @apply border-b border-line bg-[#f6f7f9] px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-500;
+  }
+
+  .odoo-table tbody td {
+    @apply border-b border-line px-4 py-3 align-middle text-[14px] text-ink-800;
+  }
+
+  .odoo-muted-pill {
+    @apply inline-flex items-center rounded-full bg-[#eef3f5] px-3 py-1 text-xs font-semibold text-ink-700;
+  }
+
+  .odoo-status-pill {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  }
+
+  .odoo-field-label {
+    @apply text-[13px] font-semibold text-ink-700;
+  }
+
+  .odoo-field-value {
+    @apply text-[15px] text-ink-950;
+  }
+
+  .odoo-chatter-tab {
+    @apply inline-flex h-9 items-center justify-center rounded-t-md border border-line bg-[#f5f7fa] px-4 text-sm font-medium text-ink-700;
+  }
+
+  .odoo-chatter-tab-active {
+    @apply bg-brand-900 text-white;
+  }
+
+  .odoo-receipt-pane {
+    @apply overflow-hidden rounded-md border border-[#26272e] bg-[#2b2d35] text-white shadow-card;
+  }
+
+  .odoo-receipt-toolbar {
+    @apply flex items-center justify-between gap-2 border-b border-white/10 bg-[#1f2027] px-3 py-2 text-xs text-white/80;
+  }
+
+  .admin-layout {
+    @apply min-h-screen bg-[#f4f5f7] text-ink-950;
+  }
+
+  .admin-frame {
+    @apply mx-auto flex min-h-screen max-w-[1640px] gap-4 px-4 py-4;
+  }
+
+  .admin-sidebar {
+    @apply hidden w-[15.25rem] shrink-0 flex-col rounded-lg border border-line bg-[#f8f8fa] px-4 py-4 lg:flex;
+  }
+
+  .admin-sidebar-link {
+    @apply flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-ink-700;
+  }
+
+  .admin-sidebar-link-active {
+    @apply bg-[#efe7eb] text-brand-900;
+  }
+
+  .admin-content {
+    @apply min-w-0 flex-1;
+  }
+
+  .admin-topbar {
+    @apply sticky top-4 z-20 rounded-lg border border-line bg-white;
+  }
+
+  .admin-topbar-inner {
+    @apply flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-4 py-3;
+  }
+
+  .admin-topbar-tabs {
+    @apply flex flex-wrap items-center gap-4;
+  }
+
+  .admin-topbar-tab {
+    @apply border-b-2 border-transparent pb-2 pt-1 text-[14px] font-medium text-ink-700;
+  }
+
+  .admin-topbar-tab-active {
+    @apply border-brand-700 text-ink-950;
+  }
+
+  .admin-search {
+    @apply flex h-9 items-center gap-2 rounded-md border border-line bg-[#fbfbfc] px-3 text-sm text-ink-700;
+  }
+
+  .admin-page {
+    @apply space-y-6 pt-5 pb-8;
+  }
+
+  .admin-grid-2 {
+    @apply grid gap-5 xl:grid-cols-[1.45fr_0.9fr];
+  }
+
+  .app-filters {
+    @apply rounded-md border border-line bg-[#f8f8fa] p-4;
+  }
+
+  .app-kpi-card {
+    @apply rounded-md border border-line bg-white px-5 py-5;
+  }
+
+  .app-inline-stat {
+    @apply rounded-md border border-line bg-white px-3 py-2 text-sm text-ink-600;
   }
 
   .category-ring {

@@ -24,49 +24,58 @@ export async function getPaymentsQueue() {
 
   const pendingSettlement = paymentRows.filter((expense) => expense.paymentStatus !== 'PAID')
   const inProcessing = paymentRows.filter((expense) => expense.paymentStatus === 'IN_PAYMENT')
+  const liveRows = paymentRows.map((expense) => {
+    const creator = usersById.get(expense.creator.id) ?? null
 
-  return {
-    stats: [
-      {
-        label: 'Pending Settlement',
-        value: formatMoney(
-          pendingSettlement.reduce(
+    return {
+      id: expense.id,
+      employee: `${expense.creator.firstName} ${expense.creator.lastName}`.trim(),
+      initials: getInitials(expense.creator.firstName, expense.creator.lastName),
+      department: creator?.department?.name ?? 'Operations',
+      category: expense.category?.name ?? 'Uncategorized',
+      submitted: formatShortDate(expense.submittedAt ?? expense.expenseDate),
+      amount: formatMoney(expense.convertedAmount ?? expense.totalAmount, expense.currency),
+      status: toPaymentStatusLabel(expense),
+      action: expense.paymentStatus === 'IN_PAYMENT' ? 'Locked' : 'Trigger',
+    }
+  })
+  const liveStats = [
+    {
+      label: 'Pending Settlement',
+      value: formatMoney(
+        pendingSettlement.reduce(
+          (sum, expense) => sum + Number(expense.convertedAmount ?? expense.totalAmount ?? 0),
+          0,
+        ),
+      ),
+      note: `${pendingSettlement.length} payouts waiting for completion`,
+      tone: 'aqua',
+    },
+    {
+      label: 'Queue Volume',
+      value: `${paymentRows.length} Items`,
+      note: `${inProcessing.length} currently processing`,
+      tone: 'neutral',
+    },
+    {
+      label: 'Settled This Cycle',
+      value: formatMoney(
+        paymentRows
+          .filter((expense) => expense.paymentStatus === 'PAID')
+          .reduce(
             (sum, expense) => sum + Number(expense.convertedAmount ?? expense.totalAmount ?? 0),
             0,
           ),
-        ),
-        note: `${pendingSettlement.length} payouts waiting for completion`,
-        tone: 'aqua',
-      },
-      {
-        label: 'Queue Volume',
-        value: `${paymentRows.length} Items`,
-        note: `${inProcessing.length} currently processing`,
-        tone: 'neutral',
-      },
-      {
-        label: 'Connected Wallet',
-        value: 'Razorpay',
-        note: 'Server-side verification enabled',
-        tone: 'brand',
-      },
-    ],
-    tabs: ['All', 'Unpaid', 'Processing'],
-    rows: paymentRows.map((expense) => {
-      const creator = usersById.get(expense.creator.id) ?? null
+      ),
+      note: 'Approved reimbursements already completed',
+      tone: 'brand',
+    },
+  ]
 
-      return {
-        id: expense.id,
-        employee: `${expense.creator.firstName} ${expense.creator.lastName}`.trim(),
-        initials: getInitials(expense.creator.firstName, expense.creator.lastName),
-        department: creator?.department?.name ?? 'Operations',
-        category: expense.category?.name ?? 'Uncategorized',
-        submitted: formatShortDate(expense.submittedAt ?? expense.expenseDate),
-        amount: formatMoney(expense.convertedAmount ?? expense.totalAmount, expense.currency),
-        status: toPaymentStatusLabel(expense),
-        action: expense.paymentStatus === 'IN_PAYMENT' ? 'Locked' : 'Trigger',
-      }
-    }),
+  return {
+    stats: liveStats,
+    tabs: ['All', 'Pending', 'In Payment', 'Paid'],
+    rows: liveRows,
   }
 }
 

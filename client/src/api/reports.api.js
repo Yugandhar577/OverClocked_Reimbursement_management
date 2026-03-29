@@ -39,6 +39,36 @@ export async function getExpenseReports() {
       expense.paymentStatus === 'IN_PAYMENT' ||
       expense.paymentStatus === 'UNPAID',
   )
+  const liveMonthGroups =
+    grouped.length > 0
+      ? grouped.map((group, index) => ({
+          month: group.month,
+          count: `${group.rows.length} reports`,
+          open: index === 0,
+          rows: group.rows.map((expense) => ({
+            id: expense.id,
+            report: expense.title,
+            employee: `${expense.creator.firstName} ${expense.creator.lastName}`.trim(),
+            initials: getInitials(expense.creator.firstName, expense.creator.lastName),
+            dateRange: formatShortDate(expense.expenseDate),
+            total: formatMoney(expense.convertedAmount ?? expense.totalAmount, expense.currency),
+            status: toUiExpenseStatus(expense),
+          })),
+        }))
+      : []
+  const monthGroups = liveMonthGroups.length
+    ? [
+        { ...liveMonthGroups[0], open: true },
+        ...liveMonthGroups.slice(1).map((group) => ({ ...group, open: false })),
+      ]
+    : [
+        {
+          month: formatMonthGroup(new Date().toISOString()),
+          count: '0 reports',
+          open: true,
+          rows: [],
+        },
+      ]
 
   return {
     statusFilters: [
@@ -87,29 +117,6 @@ export async function getExpenseReports() {
         tone: 'amber',
       },
     ],
-    monthGroups:
-      grouped.length > 0
-        ? grouped.map((group, index) => ({
-            month: group.month,
-            count: `${group.rows.length} reports`,
-            open: index === 0,
-            rows: group.rows.map((expense) => ({
-              id: expense.id,
-              report: expense.title,
-              employee: `${expense.creator.firstName} ${expense.creator.lastName}`.trim(),
-              initials: getInitials(expense.creator.firstName, expense.creator.lastName),
-              dateRange: formatShortDate(expense.expenseDate),
-              total: formatMoney(expense.convertedAmount ?? expense.totalAmount, expense.currency),
-              status: toUiExpenseStatus(expense),
-            })),
-          }))
-        : [
-            {
-              month: formatMonthGroup(new Date()),
-              count: '0 reports',
-              open: true,
-              rows: [],
-            },
-          ],
+    monthGroups,
   }
 }

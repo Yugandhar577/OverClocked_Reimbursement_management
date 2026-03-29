@@ -21,6 +21,24 @@ const initialLoginState = {
   password: '',
 }
 
+const demoAccounts = [
+  {
+    label: 'Demo Employee',
+    email: 'employee.demo+20260329@example.com',
+    password: 'Employee1234',
+  },
+  {
+    label: 'Demo Manager',
+    email: 'manager.demo+20260329@example.com',
+    password: 'Manager1234',
+  },
+  {
+    label: 'Demo Admin',
+    email: 'devsm.admin+20260329@example.com',
+    password: 'Admin1234',
+  },
+]
+
 function getErrorMessage(error) {
   if (!error?.response && /network error/i.test(error?.message ?? '')) {
     return 'Unable to reach the backend API. Start the server or set VITE_API_URL if it is running on a different host or port.'
@@ -70,32 +88,32 @@ export function AuthPage({ mode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f8f2f6_0%,#f4efee_32%,#f7f3f1_100%)] px-6 py-10 text-ink-950">
+    <div className="min-h-screen bg-[#f4f5f7] px-6 py-10 text-ink-950">
       <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.95fr]">
         <section className="surface-soft flex flex-col justify-between p-8 lg:p-10">
           <div className="space-y-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 text-white shadow-float">
+            <div className="flex h-14 w-14 items-center justify-center rounded-md bg-brand-900 text-white shadow-soft">
               <Building2 className="h-7 w-7" />
             </div>
             <div className="space-y-4">
-              <p className="section-eyebrow">Enterprise Admin</p>
-              <h1 className="font-display text-5xl font-black tracking-[-0.07em] text-ink-950">
-                Operate reimbursements from one disciplined control room.
+              <p className="section-eyebrow">Enterprise Expense Workspace</p>
+              <h1 className="text-5xl font-semibold tracking-[-0.07em] text-ink-950">
+                Review expenses, approvals, reports, and payouts in one place.
               </h1>
               <p className="max-w-xl text-base leading-8 text-ink-600">
-                Sign in to the desktop workspace or create the first company admin
-                to activate the merged backend and the admin dashboard together.
+                The app now has separate employee, manager, and admin review surfaces.
+                Use the demo credentials below to inspect each flow directly.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              'Live auth and refresh-cookie flow',
-              'Approval, payment, and hierarchy APIs',
-              'Desktop admin shell wired to Express',
+              'Odoo-inspired desktop expense layouts',
+              'Employee, manager, and admin role flows',
+              'Live Express and Prisma backend',
             ].map((item) => (
-              <div key={item} className="rounded-[24px] bg-white/80 px-4 py-4 shadow-soft">
+              <div key={item} className="rounded-md border border-line bg-white px-4 py-4 shadow-soft">
                 <p className="text-sm font-semibold leading-6 text-ink-700">{item}</p>
               </div>
             ))}
@@ -110,7 +128,7 @@ export function AuthPage({ mode }) {
             <CardDescription>
               {isSignup
                 ? 'Create the first company admin and start using the live backend.'
-                : 'Use your company admin credentials to access the desktop control surface.'}
+                : 'Use the role-based credentials below or your company account to access the right workspace.'}
             </CardDescription>
           </CardHeader>
 
@@ -127,6 +145,7 @@ export function AuthPage({ mode }) {
                   Company Name
                 </label>
                 <Input
+                  autoComplete="organization"
                   onChange={(event) =>
                     setSignupState((current) => ({
                       ...current,
@@ -144,6 +163,7 @@ export function AuthPage({ mode }) {
                     First Name
                   </label>
                   <Input
+                    autoComplete="given-name"
                     onChange={(event) =>
                       setSignupState((current) => ({
                         ...current,
@@ -159,6 +179,7 @@ export function AuthPage({ mode }) {
                     Last Name
                   </label>
                   <Input
+                    autoComplete="family-name"
                     onChange={(event) =>
                       setSignupState((current) => ({
                         ...current,
@@ -177,6 +198,7 @@ export function AuthPage({ mode }) {
                     Email
                   </label>
                   <Input
+                    autoComplete="email"
                     onChange={(event) =>
                       setSignupState((current) => ({
                         ...current,
@@ -193,6 +215,7 @@ export function AuthPage({ mode }) {
                     Country
                   </label>
                   <Input
+                    autoComplete="country-name"
                     onChange={(event) =>
                       setSignupState((current) => ({
                         ...current,
@@ -210,6 +233,7 @@ export function AuthPage({ mode }) {
                   Password
                 </label>
                 <Input
+                  autoComplete="new-password"
                   onChange={(event) =>
                     setSignupState((current) => ({
                       ...current,
@@ -234,6 +258,7 @@ export function AuthPage({ mode }) {
                   Email
                 </label>
                 <Input
+                  autoComplete="email"
                   onChange={(event) =>
                     setLoginState((current) => ({
                       ...current,
@@ -251,6 +276,7 @@ export function AuthPage({ mode }) {
                   Password
                 </label>
                 <Input
+                  autoComplete="current-password"
                   onChange={(event) =>
                     setLoginState((current) => ({
                       ...current,
@@ -267,6 +293,30 @@ export function AuthPage({ mode }) {
                 <LogIn className="h-4 w-4" />
                 Sign In
               </Button>
+
+              <div className="space-y-3 border-t border-line pt-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
+                  Quick Access
+                </p>
+                <div className="grid gap-2 md:grid-cols-3">
+                  {demoAccounts.map((account) => (
+                    <button
+                      key={account.label}
+                      className="rounded-md border border-line bg-[#f7f8fa] px-3 py-3 text-left text-sm"
+                      onClick={() => {
+                        setLoginState({
+                          email: account.email,
+                          password: account.password,
+                        })
+                      }}
+                      type="button"
+                    >
+                      <p className="font-semibold text-ink-950">{account.label}</p>
+                      <p className="mt-1 truncate text-xs text-ink-500">{account.email}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </form>
           )}
 
@@ -275,7 +325,7 @@ export function AuthPage({ mode }) {
               {isSignup ? 'Already have an account?' : 'Need to create the first admin?'}
             </span>
             <Link
-              className="inline-flex items-center gap-2 font-semibold text-brand-800 transition hover:text-brand-950"
+              className="inline-flex items-center gap-2 font-semibold text-brand-800"
               to={isSignup ? '/login' : '/signup'}
             >
               {isSignup ? 'Go to sign in' : 'Create admin'}

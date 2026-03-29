@@ -20,7 +20,10 @@ export function AdminLayout() {
     getNotifications({ limit: 6 })
       .then((result) => {
         if (!cancelled) {
-          setNotifications(result.items, result.unreadCount)
+          setNotifications(
+            result.items ?? [],
+            result.unreadCount ?? result.items?.length ?? 0,
+          )
         }
       })
       .catch(() => {
@@ -35,12 +38,12 @@ export function AdminLayout() {
   }, [setNotifications, status])
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f8f2f6_0%,#f4efee_32%,#f7f3f1_100%)] text-ink-950">
-      <div className="mx-auto flex min-h-screen max-w-[1720px] flex-col gap-4 px-4 py-4 lg:flex-row lg:px-5">
+    <div className="admin-layout">
+      <div className="admin-frame flex-col lg:flex-row">
         <AdminSidebar />
-        <div className="min-w-0 flex-1">
+        <div className="admin-content">
           <AdminTopbar />
-          <main className="pb-10 pt-6">
+          <main className="admin-page">
             <Outlet />
           </main>
         </div>

@@ -55,15 +55,51 @@ export async function getApprovalRulesWorkspace() {
   const rules = await listApprovalRules()
   const primaryRule = rules[0] ?? null
   const approverCounts = rules.map((rule) => rule.approvers?.length ?? 0)
-
+  const liveRules = rules.map((rule) => ({
+    id: rule.id,
+    name: rule.name,
+    description: rule.description ?? 'Rule is ready for enterprise review routing.',
+    active: rule.isActive,
+    version: `v${rule.approvers?.length ?? 0}.${(rule.priority ?? 0) + 1}`,
+  }))
+  const liveSteps =
+    primaryRule?.approvers?.map((approver) => ({
+      order: approver.sequence,
+      title: `Approval Step ${approver.sequence}`,
+      description: humanizeEnum(approver.user.role),
+      approvers: [`${approver.user.firstName} ${approver.user.lastName}`.trim()],
+      required: approver.isRequired,
+    })) ?? []
+  const liveMetrics = [
+    {
+      label: 'Active Users',
+      value: String(rules.filter((rule) => rule.isActive).length),
+      note: 'Active approval policies',
+    },
+    {
+      label: 'Avg Time',
+      value: `${average(approverCounts).toFixed(1)} steps`,
+      note: 'Average approver depth',
+    },
+    {
+      label: 'Rejections',
+      value: `${rules.filter((rule) => !rule.isActive).length}%`,
+      note: 'Inactive or retired rules',
+    },
+    {
+      label: 'Last Modified',
+      value: primaryRule
+        ? new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+          }).format(new Date(primaryRule.updatedAt))
+        : 'No rules',
+      note: primaryRule ? 'Most recently updated policy' : 'Create your first rule',
+    },
+  ]
   return {
-    rules: rules.map((rule) => ({
-      id: rule.id,
-      name: rule.name,
-      description: rule.description ?? 'Rule is ready for enterprise review routing.',
-      active: rule.isActive,
-      version: `v${rule.approvers?.length ?? 0}.${(rule.priority ?? 0) + 1}`,
-    })),
+    rules: liveRules,
     controls: [
       {
         label: 'VIP Exclusive Rule',
@@ -79,46 +115,11 @@ export async function getApprovalRulesWorkspace() {
         enabled: true,
       },
     ],
-    threshold: primaryRule?.percentageRequired
-      ? `${primaryRule.percentageRequired}%`
-      : '100%',
-    steps:
-      primaryRule?.approvers?.map((approver) => ({
-        order: approver.sequence,
-        title: `Approval Step ${approver.sequence}`,
-        description: humanizeEnum(approver.user.role),
-        approvers: [
-          `${approver.user.firstName} ${approver.user.lastName}`.trim(),
-        ],
-        required: approver.isRequired,
-      })) ?? [],
-    metrics: [
-      {
-        label: 'Active Users',
-        value: String(rules.filter((rule) => rule.isActive).length),
-        note: 'Active approval policies',
-      },
-      {
-        label: 'Avg Time',
-        value: `${average(approverCounts).toFixed(1)} steps`,
-        note: 'Average approver depth',
-      },
-      {
-        label: 'Rejections',
-        value: `${rules.filter((rule) => !rule.isActive).length}%`,
-        note: 'Inactive or retired rules',
-      },
-      {
-        label: 'Last Modified',
-        value: primaryRule
-          ? new Intl.DateTimeFormat('en-US', {
-              month: 'short',
-              day: '2-digit',
-              year: 'numeric',
-            }).format(new Date(primaryRule.updatedAt))
-          : 'No rules',
-        note: primaryRule ? 'Most recently updated policy' : 'Create your first rule',
-      },
-    ],
+    threshold:
+      primaryRule?.percentageRequired
+        ? `${primaryRule.percentageRequired}%`
+        : 'N/A',
+    steps: liveSteps,
+    metrics: liveMetrics,
   }
 }

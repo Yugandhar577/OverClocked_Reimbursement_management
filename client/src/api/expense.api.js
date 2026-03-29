@@ -88,3 +88,33 @@ export async function listSupportedCurrencies() {
   const response = await api.get('/api/companies/currencies')
   return response.data.data ?? []
 }
+
+export async function importExpensesCsv(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await api.post('/api/expenses/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return unwrap(response)
+}
+
+export async function downloadExpenseImportTemplate() {
+  const response = await api.get('/api/expenses/import-template', {
+    responseType: 'blob',
+  })
+
+  return response.data
+}
+
+export async function exportExpensesCsv(params = {}) {
+  const response = await api.get('/api/expenses/export', {
+    params,
+    responseType: 'blob',
+  })
+
+  return response.data
+}

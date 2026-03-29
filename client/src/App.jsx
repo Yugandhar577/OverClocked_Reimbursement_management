@@ -57,6 +57,7 @@ export default function App() {
           </RequireAuth>
         }
       >
+        <Route index element={<Navigate replace to="dashboard" />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route
           path="employees/new"
@@ -91,7 +92,7 @@ export default function App() {
       </Route>
       <Route
         element={
-          <RequireAuth roles={['EMPLOYEE', 'MANAGER', 'ADMIN', 'FINANCE', 'SUPER_ADMIN']}>
+          <RequireAuth roles={['EMPLOYEE']}>
             <MobileLayout />
           </RequireAuth>
         }
@@ -104,7 +105,7 @@ export default function App() {
       </Route>
       <Route
         element={
-          <RequireAuth roles={['MANAGER', 'ADMIN', 'FINANCE', 'SUPER_ADMIN']}>
+          <RequireAuth roles={['MANAGER']}>
             <MobileLayout />
           </RequireAuth>
         }
@@ -112,6 +113,15 @@ export default function App() {
         <Route path="/approvals" element={<ApprovalQueue />} />
         <Route path="/approvals/:id" element={<ApprovalDetail />} />
         <Route path="/team-expenses" element={<TeamExpenses />} />
+      </Route>
+      <Route
+        element={
+          <RequireAuth roles={['EMPLOYEE', 'MANAGER']}>
+            <MobileLayout />
+          </RequireAuth>
+        }
+      >
+        <Route path="/profile" element={<MobileProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>

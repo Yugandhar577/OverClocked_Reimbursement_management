@@ -4,16 +4,16 @@ import { cn } from '../../utils/cn.js'
 
 export function ConfigurationTabs() {
   return (
-    <div className="flex flex-wrap gap-2 rounded-[24px] border border-white/70 bg-white/70 p-2 shadow-soft backdrop-blur">
+    <div className="flex flex-wrap gap-2 rounded-md border border-line bg-white p-2 shadow-soft">
       {configurationTabs.map((tab) => (
         <NavLink
           key={tab.href}
           className={({ isActive }) =>
             cn(
-              'rounded-2xl px-4 py-2 text-sm font-semibold transition',
+              'rounded-md px-4 py-2 text-sm font-medium',
               isActive
-                ? 'bg-brand-800 text-white shadow-soft'
-                : 'text-ink-600 hover:bg-brand-50 hover:text-brand-900',
+                ? 'bg-brand-900 text-white'
+                : 'text-ink-600',
             )
           }
           to={tab.href}

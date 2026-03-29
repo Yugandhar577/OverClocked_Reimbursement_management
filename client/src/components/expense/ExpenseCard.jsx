@@ -9,7 +9,7 @@ export function ExpenseCard({ expense, to }) {
 
   return (
     <Link
-      className="surface-card block p-4 transition hover:-translate-y-0.5 hover:shadow-float"
+      className="surface-card block p-4"
       to={to}
     >
       <div className="flex items-start justify-between gap-4">

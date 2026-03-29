@@ -8,8 +8,12 @@ export function resolveHomePath(user) {
       return '/expenses'
     case 'MANAGER':
       return '/approvals'
-    default:
+    case 'ADMIN':
+    case 'FINANCE':
+    case 'SUPER_ADMIN':
       return '/admin/dashboard'
+    default:
+      return '/expenses'
   }
 }
 
@@ -44,7 +48,7 @@ export function RequireAuth({ children, roles }) {
   if (status === 'idle' || status === 'bootstrapping' || status === 'loading') {
     return (
       <FullscreenPanel
-        copy="Checking your session and preparing the admin workspace."
+        copy="Checking your session and preparing the expense workspace."
         eyebrow="Session"
         title="Connecting"
       />
@@ -76,7 +80,7 @@ export function GuestOnly({ children }) {
   if (status === 'idle' || status === 'bootstrapping') {
     return (
       <FullscreenPanel
-        copy="Looking for an existing admin session before showing the auth flow."
+        copy="Looking for an existing session before showing the auth flow."
         eyebrow="Auth"
         title="Loading"
       />

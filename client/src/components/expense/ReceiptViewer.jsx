@@ -1,7 +1,13 @@
-import { ExternalLink, FileImage, LoaderCircle, ReceiptText } from 'lucide-react'
+import {
+  FileImage,
+  LoaderCircle,
+  Minus,
+  Plus,
+  Search,
+  SquareDashedMousePointer,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getReceiptAssetUrl } from '../../api/expense.api.js'
-import { CurrencyDisplay } from './CurrencyDisplay.jsx'
 
 export function ReceiptViewer({ receipts = [] }) {
   const [assetUrl, setAssetUrl] = useState('')
@@ -39,65 +45,47 @@ export function ReceiptViewer({ receipts = [] }) {
     }
   }, [latestReceipt?.id])
 
-  const ocr = latestReceipt?.ocrData ?? {}
-
   return (
-    <section className="surface-card p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ink-500">Receipt Viewer</p>
-          <h3 className="mt-1 font-display text-xl font-bold tracking-[-0.04em] text-ink-950">
-            Latest attachment
-          </h3>
-        </div>
-        {assetUrl ? (
-          <a
-            className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-900"
-            href={assetUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Open
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        ) : null}
-      </div>
-
-      <div className="mt-4 rounded-[24px] border border-dashed border-brand-100 bg-[#fbf7fa] p-4">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-ink-600">
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-            Loading receipt preview...
+    <section className="odoo-receipt-pane h-full">
+      <div className="odoo-receipt-toolbar">
+        <div className="flex items-center gap-2">
+          <SquareDashedMousePointer className="h-4 w-4" />
+          <Search className="h-4 w-4" />
+          <div className="rounded bg-white/10 px-3 py-1">
+            {latestReceipt ? '1 of 1' : '0 of 0'}
           </div>
-        ) : assetUrl ? (
-          <img alt="Receipt preview" className="max-h-64 w-full rounded-[18px] object-contain" src={assetUrl} />
-        ) : (
-          <div className="flex items-center gap-3 text-sm text-ink-600">
-            <FileImage className="h-5 w-5 text-brand-700" />
-            No preview available yet.
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[20px] bg-aqua-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-aqua-700">Vendor</p>
-          <p className="mt-1 text-sm font-semibold text-ink-950">{ocr.vendor ?? latestReceipt?.fileName ?? 'Pending OCR'}</p>
         </div>
-        <div className="rounded-[20px] bg-brand-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Detected Total</p>
-          <p className="mt-1 text-sm font-semibold text-ink-950">
-            {ocr.total || ocr.amount ? <CurrencyDisplay amount={ocr.total ?? ocr.amount} currency={ocr.currency} /> : 'Pending OCR'}
-          </p>
+        <div className="flex items-center gap-2">
+          <Minus className="h-4 w-4" />
+          <Plus className="h-4 w-4" />
+          <div className="rounded bg-white/10 px-3 py-1">Automatic Zoom</div>
         </div>
       </div>
 
-      {latestReceipt?.ocrStatus ? (
-        <div className="mt-4 flex items-center gap-2 text-sm text-ink-600">
-          <ReceiptText className="h-4 w-4 text-amber-600" />
-          OCR status: {latestReceipt.ocrStatus}
+      <div className="grid min-h-[640px] place-items-center bg-[#2b2d35] p-6">
+        <div className="w-full max-w-[440px] rounded-sm bg-white p-6 shadow-[0_22px_50px_rgba(0,0,0,0.28)]">
+          {isLoading ? (
+            <div className="flex h-[520px] items-center justify-center gap-3 text-sm text-ink-600">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Loading receipt preview...
+            </div>
+          ) : assetUrl ? (
+            <img
+              alt="Receipt preview"
+              className="mx-auto max-h-[520px] w-full object-contain"
+              src={assetUrl}
+            />
+          ) : (
+            <div className="flex h-[520px] flex-col items-center justify-center gap-3 text-center text-ink-600">
+              <FileImage className="h-10 w-10 text-ink-400" />
+              <p className="text-base font-medium text-ink-800">No receipt attached yet.</p>
+              <p className="max-w-[240px] text-sm leading-6">
+                Attach a file to view the scanned receipt in the side panel.
+              </p>
+            </div>
+          )}
         </div>
-      ) : null}
+      </div>
     </section>
   )
 }

@@ -1,9 +1,6 @@
-import { Download, IndianRupee, LoaderCircle, ShieldCheck, Zap } from 'lucide-react'
-import { useState } from 'react'
-import {
-  createPaymentOrderRequest,
-  getPaymentsQueue,
-} from '../../api/payments.api.js'
+import { Download, ShieldCheck } from 'lucide-react'
+import { exportExpensesCsv } from '../../api/expense.api.js'
+import { getPaymentsQueue } from '../../api/payments.api.js'
 import { AvatarBadge } from '../../components/shared/AvatarBadge.jsx'
 import { DataTable } from '../../components/shared/DataTable.jsx'
 import { LoadingPanel } from '../../components/shared/LoadingPanel.jsx'
@@ -15,90 +12,25 @@ import { Card } from '../../components/ui/card.jsx'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx'
 import { useMockResource } from '../../hooks/useMockResource.js'
 
+function downloadBlob(blob, fileName) {
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  anchor.click()
+  window.URL.revokeObjectURL(url)
+}
+
 export function PaymentsPage() {
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [activeTab, setActiveTab] = useState('All')
-  const [isBatchProcessing, setIsBatchProcessing] = useState(false)
-  const [rowProcessingIds, setRowProcessingIds] = useState([])
-  const [feedbackError, setFeedbackError] = useState('')
-  const [feedbackMessage, setFeedbackMessage] = useState('')
-  const { data, isLoading } = useMockResource(getPaymentsQueue, [refreshKey])
+  const { data, isLoading } = useMockResource(getPaymentsQueue, [])
 
   if (isLoading || !data) {
     return <LoadingPanel />
   }
 
-  const filteredRows = activeTab === 'Unpaid'
-    ? data.rows.filter((row) => row.status === 'Pending Payment')
-    : activeTab === 'Processing'
-      ? data.rows.filter((row) => row.status === 'Processing')
-      : data.rows
-
-  const startRowProcessing = (expenseId) => {
-    setRowProcessingIds((current) => (current.includes(expenseId) ? current : [...current, expenseId]))
-  }
-
-  const stopRowProcessing = (expenseId) => {
-    setRowProcessingIds((current) => current.filter((id) => id !== expenseId))
-  }
-
-  const handleTriggerSingle = async (expenseId) => {
-    setFeedbackError('')
-    setFeedbackMessage('')
-    startRowProcessing(expenseId)
-
-    try {
-      const order = await createPaymentOrderRequest(expenseId)
-      setFeedbackMessage(`Payment initiated. Order ${order.orderId} is now in progress.`)
-      setRefreshKey((value) => value + 1)
-    } catch (error) {
-      setFeedbackError(
-        error?.response?.data?.message ??
-          error?.message ??
-          'Unable to trigger payment for this expense.',
-      )
-    } finally {
-      stopRowProcessing(expenseId)
-    }
-  }
-
-  const handleTriggerBatch = async () => {
-    const readyExpenseIds = data.rows
-      .filter((row) => row.action === 'Trigger')
-      .map((row) => row.id)
-
-    if (!readyExpenseIds.length) {
-      setFeedbackError('No approved expenses are currently ready for payment trigger.')
-      setFeedbackMessage('')
-      return
-    }
-
-    setIsBatchProcessing(true)
-    setFeedbackError('')
-    setFeedbackMessage('')
-
-    let successCount = 0
-    let failedCount = 0
-
-    for (const expenseId of readyExpenseIds) {
-      try {
-        await createPaymentOrderRequest(expenseId)
-        successCount += 1
-      } catch {
-        failedCount += 1
-      }
-    }
-
-    if (failedCount) {
-      setFeedbackError(`${failedCount} payment triggers failed. Check Razorpay configuration and retry.`)
-    }
-
-    if (successCount) {
-      setFeedbackMessage(`${successCount} payment order(s) were initiated successfully.`)
-    }
-
-    setIsBatchProcessing(false)
-    setRefreshKey((value) => value + 1)
+  const handleExport = async () => {
+    const blob = await exportExpensesCsv()
+    downloadBlob(blob, 'settlement-queue.csv')
   }
 
   const columns = [
@@ -127,102 +59,52 @@ export function PaymentsPage() {
       header: 'Status',
       render: (row) => <StatusBadge status={row.status} />,
     },
-    {
-      key: 'action',
-      header: 'Action',
-      render: (row) => (
-        <Button
-          disabled={row.action !== 'Trigger' || rowProcessingIds.includes(row.id) || isBatchProcessing}
-          onClick={() => handleTriggerSingle(row.id)}
-          size="sm"
-          variant={row.action === 'Trigger' ? 'secondary' : 'ghost'}
-        >
-          {rowProcessingIds.includes(row.id) ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          ) : null}
-          {row.action === 'Trigger' ? 'Trigger' : 'Locked'}
-        </Button>
-      ),
-    },
   ]
 
   return (
-    <PageTransition className="space-y-8">
+    <PageTransition className="space-y-6">
       <Reveal>
         <PageHeader
           actions={
-            <>
-              <Button size="sm" variant="secondary">
-                <Download className="h-4 w-4" />
-                Download Report
-              </Button>
-              <Button disabled={isBatchProcessing} onClick={handleTriggerBatch} size="sm">
-                {isBatchProcessing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                <Zap className="h-4 w-4" />
-                Trigger Batch Payment
-              </Button>
-            </>
+            <Button onClick={handleExport} size="sm" variant="secondary">
+              <Download className="h-4 w-4" />
+              Export Settlements
+            </Button>
           }
-          description="Manage and execute outbound transfers for verified business expenses with approval-aware sequencing."
+          description="Track approved reimbursements and settlement readiness without surfacing unused payment-provider controls."
           eyebrow="Treasury Operations"
-          title="Payments Queue"
+          title="Settlement Queue"
         />
       </Reveal>
 
-      <div className="grid gap-5 xl:grid-cols-3">
-        {data.stats.map((item, index) => (
+      <div className="grid gap-4 xl:grid-cols-3">
+        {data.stats.map((item) => (
           <Reveal key={item.label}>
-            <Card
-              className={`p-6 ${
-                index === 2 ? 'bg-gradient-to-br from-brand-800 to-brand-700 text-white' : ''
-              }`}
-            >
-              <p
-                className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${
-                  index === 2 ? 'text-white/70' : 'text-ink-500'
-                }`}
-              >
+            <Card className="rounded-md bg-[#fbfbfc] p-5 shadow-soft">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-500">
                 {item.label}
               </p>
-              <p
-                className={`mt-4 font-display text-[2.8rem] font-black tracking-[-0.05em] ${
-                  index === 2 ? 'text-white' : 'text-ink-950'
-                }`}
-              >
+              <p className="mt-4 text-[2.1rem] font-semibold tracking-[-0.05em] text-ink-950">
                 {item.value}
               </p>
-              <p className={`mt-2 text-sm ${index === 2 ? 'text-white/80' : 'text-ink-600'}`}>
-                {item.note}
-              </p>
+              <p className="mt-2 text-sm text-ink-600">{item.note}</p>
             </Card>
           </Reveal>
         ))}
       </div>
 
       <Reveal>
-        <Card className="p-6">
-          {feedbackError ? (
-            <div className="mb-4 rounded-[20px] bg-red-50 px-4 py-3 text-sm text-red-700">
-              {feedbackError}
-            </div>
-          ) : null}
-
-          {feedbackMessage ? (
-            <div className="mb-4 rounded-[20px] bg-aqua-50 px-4 py-3 text-sm text-aqua-700">
-              {feedbackMessage}
-            </div>
-          ) : null}
-
+        <Card className="p-5">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-ink-950">
-                Transaction Ledger
+                Settlement Ledger
               </h2>
               <p className="mt-1 text-sm text-ink-500">
-                Prioritize queue items by payout readiness and integration state.
+                Monitor approved payouts, processing items, and completed reimbursements.
               </p>
             </div>
-            <Tabs onValueChange={setActiveTab} value={activeTab}>
+            <Tabs defaultValue={data.tabs[0]}>
               <TabsList>
                 {data.tabs.map((tab) => (
                   <TabsTrigger key={tab} value={tab}>
@@ -234,47 +116,24 @@ export function PaymentsPage() {
           </div>
 
           <div className="mt-6">
-            <DataTable rows={filteredRows} columns={columns} />
+            <DataTable rows={data.rows} columns={columns} />
           </div>
         </Card>
       </Reveal>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Reveal>
-          <Card className="flex h-full items-center gap-4 p-6">
-            <div className="rounded-2xl bg-brand-50 p-3 text-brand-800">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-ink-950">Enterprise Grade Security</p>
-              <p className="mt-1 text-sm leading-6 text-ink-600">
-                All payments are processed through approval-scoped channels with
-                strong encryption and audit logs.
-              </p>
-            </div>
-          </Card>
-        </Reveal>
-
-        <Reveal>
-          <Card className="flex h-full items-center justify-between gap-5 p-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ink-500">
-                Last Batch Run
-              </p>
-              <p className="mt-3 font-semibold text-ink-950">Today, 09:12 AM</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ink-500">
-                Total Paid (MTD)
-              </p>
-              <p className="mt-3 flex items-center justify-end gap-1 font-display text-[2rem] font-black tracking-[-0.05em] text-aqua-700">
-                <IndianRupee className="h-5 w-5" />
-                24,82,000
-              </p>
-            </div>
-          </Card>
-        </Reveal>
-      </div>
+      <Reveal>
+        <Card className="flex items-center gap-4 p-5">
+          <div className="rounded-2xl bg-brand-50 p-3 text-brand-800">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-ink-950">Audit-safe reimbursement trail</p>
+            <p className="mt-1 text-sm leading-6 text-ink-600">
+              Settlement status is preserved in the expense ledger so finance can reconcile approved payouts without external-provider noise in the UI.
+            </p>
+          </div>
+        </Card>
+      </Reveal>
     </PageTransition>
   )
 }

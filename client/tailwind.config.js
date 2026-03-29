@@ -4,31 +4,31 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#fbf9f8',
+        canvas: '#f5f6f8',
         panel: '#ffffff',
-        line: '#e7dfdf',
+        line: '#dfe3e8',
         ink: {
-          950: '#1b1c1c',
-          800: '#342d31',
-          700: '#4e444a',
-          500: '#80747b',
-          400: '#a69aa1',
+          950: '#2f3640',
+          800: '#46505c',
+          700: '#5e6977',
+          500: '#7b8796',
+          400: '#a7afb9',
         },
         brand: {
-          950: '#310e2b',
-          900: '#4c203f',
-          800: '#6d4262',
+          950: '#55364d',
+          900: '#714b67',
+          800: '#875a7b',
           700: '#875a7b',
-          600: '#9d7691',
-          100: '#f2e7ee',
-          50: '#fbf7fa',
+          600: '#9f7893',
+          100: '#efe7eb',
+          50: '#f8f4f6',
         },
         aqua: {
-          700: '#006a68',
-          600: '#087c7a',
-          500: '#2eb7b2',
-          100: '#d7f4f2',
-          50: '#f1fbfa',
+          700: '#007983',
+          600: '#0b9aa8',
+          500: '#18b9b4',
+          100: '#dff5f7',
+          50: '#f2fbfc',
         },
         amber: {
           700: '#863900',
@@ -39,13 +39,13 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Public Sans', 'Inter', 'sans-serif'],
+        sans: ['Inter', '"Odoo Unicode Support Noto"', 'sans-serif'],
+        display: ['Inter', '"Odoo Unicode Support Noto"', 'sans-serif'],
       },
       boxShadow: {
-        soft: '0 12px 28px -18px rgba(49, 14, 43, 0.18)',
-        card: '0 18px 40px -26px rgba(49, 14, 43, 0.22)',
-        float: '0 28px 70px -34px rgba(49, 14, 43, 0.28)',
+        soft: '0 8px 24px -18px rgba(46, 54, 64, 0.24)',
+        card: '0 18px 42px -30px rgba(46, 54, 64, 0.2)',
+        float: '0 26px 60px -36px rgba(46, 54, 64, 0.26)',
       },
       keyframes: {
         'fade-up': {

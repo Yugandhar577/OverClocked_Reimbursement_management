@@ -1,21 +1,32 @@
-import { Download, Plus } from 'lucide-react'
+import { Download, Upload } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { exportExpensesCsv } from '../../api/expense.api.js'
 import { getAllExpenses } from '../../api/expenses.api.js'
 import { SidebarFilters } from '../../components/admin/SidebarFilters.jsx'
 import { AvatarBadge } from '../../components/shared/AvatarBadge.jsx'
-import { DataTable, RowActions } from '../../components/shared/DataTable.jsx'
+import { DataTable } from '../../components/shared/DataTable.jsx'
 import { LoadingPanel } from '../../components/shared/LoadingPanel.jsx'
 import { PageHeader } from '../../components/shared/PageHeader.jsx'
 import { PageTransition, Reveal } from '../../components/shared/PageTransition.jsx'
 import { StatusBadge } from '../../components/shared/StatusBadge.jsx'
 import { Badge } from '../../components/ui/badge.jsx'
-import { Button } from '../../components/ui/button.jsx'
+import { Button, buttonVariants } from '../../components/ui/button.jsx'
 import { Card } from '../../components/ui/card.jsx'
 import { useMockResource } from '../../hooks/useMockResource.js'
 
 const highlightTone = {
-  danger: 'bg-red-100 text-red-700',
-  brand: 'bg-brand-100 text-brand-900',
-  soft: 'bg-[#f2ecee] text-ink-700',
+  danger: 'bg-red-50 text-red-700',
+  brand: 'bg-brand-50 text-brand-900',
+  soft: 'bg-[#f6f3f5] text-ink-700',
+}
+
+function downloadBlob(blob, fileName) {
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  anchor.click()
+  window.URL.revokeObjectURL(url)
 }
 
 export function ExpensesPage() {
@@ -23,6 +34,11 @@ export function ExpensesPage() {
 
   if (isLoading || !data) {
     return <LoadingPanel />
+  }
+
+  const handleExport = async () => {
+    const blob = await exportExpensesCsv()
+    downloadBlob(blob, 'company-expenses.csv')
   }
 
   const columns = [
@@ -65,19 +81,13 @@ export function ExpensesPage() {
       header: 'Status',
       render: (row) => <StatusBadge status={row.status} />,
     },
-    {
-      key: 'actions',
-      header: '',
-      className: 'w-12',
-      render: () => <RowActions />,
-    },
   ]
 
   return (
     <PageTransition className="flex flex-col gap-6 xl:flex-row">
       <Reveal className="xl:w-[19rem] xl:flex-none">
         <SidebarFilters
-          footerActionLabel="New Expense"
+          footerActionLabel={null}
           sections={[
             { label: 'Status', type: 'checkbox', items: data.statusFilters },
             {
@@ -91,22 +101,25 @@ export function ExpensesPage() {
         />
       </Reveal>
 
-      <div className="min-w-0 flex-1 space-y-8">
+      <div className="min-w-0 flex-1 space-y-6">
         <Reveal>
           <PageHeader
             actions={
               <>
-                <Button size="sm" variant="secondary">
+                <Button onClick={handleExport} size="sm" variant="secondary">
                   <Download className="h-4 w-4" />
                   Export CSV
                 </Button>
-                <Button size="sm">
-                  <Plus className="h-4 w-4" />
-                  Create Expense
-                </Button>
+                <Link
+                  className={buttonVariants({ size: 'sm' })}
+                  to="/admin/import"
+                >
+                  <Upload className="h-4 w-4" />
+                  Bulk Import
+                </Link>
               </>
             }
-            description="Review and manage employee expense claims from the current fiscal period."
+            description="Track employee expenses across statuses without exposing employee-only creation actions inside the admin shell."
             eyebrow="Claims Workspace"
             title="Company Expenses"
           />
@@ -116,18 +129,24 @@ export function ExpensesPage() {
           <DataTable rows={data.rows} columns={columns} />
         </Reveal>
 
-        <div className="grid gap-5 xl:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-3">
           {data.highlights.map((item) => (
             <Reveal key={item.label}>
-              <Card className="p-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink-500">
+              <Card className="min-h-[148px] rounded-md bg-[#fbfbfc] p-5 shadow-soft">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">
                   {item.label}
                 </p>
-                <p className="mt-4 font-display text-[2.4rem] font-black tracking-[-0.05em] text-ink-950">
+                <p
+                  className={
+                    item.tone === 'soft'
+                      ? 'mt-4 text-base font-semibold leading-7 text-ink-950'
+                      : 'mt-4 text-[1.95rem] font-semibold tracking-[-0.05em] text-ink-950'
+                  }
+                >
                   {item.value}
                 </p>
                 <p
-                  className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${highlightTone[item.tone]}`}
+                  className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${highlightTone[item.tone]}`}
                 >
                   {item.note}
                 </p>

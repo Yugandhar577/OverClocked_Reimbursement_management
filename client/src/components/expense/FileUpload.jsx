@@ -10,7 +10,7 @@ export function FileUpload({ file, helperText, onFileSelect }) {
   }
 
   return (
-    <label className="surface-soft flex cursor-pointer flex-col gap-3 p-4 transition hover:border-brand-200">
+    <label className="surface-soft flex cursor-pointer flex-col gap-3 p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">Receipt Upload</p>

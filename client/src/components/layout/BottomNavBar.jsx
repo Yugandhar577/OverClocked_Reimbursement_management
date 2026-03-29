@@ -30,10 +30,10 @@ export function BottomNavBar() {
               key={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[11px] font-semibold transition',
+                  'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[11px] font-semibold',
                   isActive
                     ? 'bg-brand-900 text-white shadow-soft'
-                    : 'text-ink-500 hover:bg-brand-50 hover:text-brand-900',
+                    : 'text-ink-500',
                 )
               }
               to={item.to}

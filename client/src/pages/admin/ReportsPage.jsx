@@ -1,4 +1,6 @@
-import { ChevronRight, Download, Filter } from 'lucide-react'
+import { ChevronRight, Download } from 'lucide-react'
+import { useState } from 'react'
+import { exportExpensesCsv } from '../../api/expense.api.js'
 import { getExpenseReports } from '../../api/reports.api.js'
 import { SidebarFilters } from '../../components/admin/SidebarFilters.jsx'
 import { AvatarBadge } from '../../components/shared/AvatarBadge.jsx'
@@ -20,12 +22,26 @@ const toneClasses = {
 
 export function ReportsPage() {
   const { data, isLoading } = useMockResource(getExpenseReports, [])
+  const [openMonth, setOpenMonth] = useState(null)
 
   if (isLoading || !data) {
     return <LoadingPanel />
   }
 
-  const activeMonth = data.monthGroups.find((group) => group.open) ?? data.monthGroups[0]
+  const activeMonth =
+    data.monthGroups.find((group) => group.month === openMonth) ??
+    data.monthGroups.find((group) => group.open) ??
+    data.monthGroups[0]
+
+  const handleExport = async () => {
+    const blob = await exportExpensesCsv()
+    const url = window.URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'expense-reports.csv'
+    anchor.click()
+    window.URL.revokeObjectURL(url)
+  }
 
   const columns = [
     {
@@ -64,7 +80,7 @@ export function ReportsPage() {
     <PageTransition className="flex flex-col gap-6 xl:flex-row">
       <Reveal className="xl:w-[18rem] xl:flex-none">
         <SidebarFilters
-          footerActionLabel="Create Report"
+          footerActionLabel={null}
           sections={[
             { label: 'Status', type: 'checkbox', items: data.statusFilters },
             {
@@ -77,20 +93,14 @@ export function ReportsPage() {
         />
       </Reveal>
 
-      <div className="min-w-0 flex-1 space-y-8">
+      <div className="min-w-0 flex-1 space-y-6">
         <Reveal>
           <PageHeader
             actions={
-              <>
-                <Button size="sm" variant="secondary">
-                  <Filter className="h-4 w-4" />
-                  Group By
-                </Button>
-                <Button size="sm" variant="secondary">
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-              </>
+              <Button onClick={handleExport} size="sm" variant="secondary">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
             }
             description="Review and approve employee reimbursement batches."
             title="Expense Reports"
@@ -102,14 +112,14 @@ export function ReportsPage() {
             <Reveal key={item.label}>
               <Card
                 className={cn(
-                  'relative overflow-hidden p-6 before:absolute before:inset-y-6 before:left-0 before:w-1 before:rounded-full',
+                  'relative overflow-hidden p-5 before:absolute before:inset-y-5 before:left-0 before:w-1 before:rounded-full',
                   toneClasses[item.tone],
                 )}
               >
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ink-500">
                   {item.label}
                 </p>
-                <p className="mt-5 font-display text-[2.7rem] font-black tracking-[-0.05em] text-ink-950">
+                <p className="mt-4 text-[2.3rem] font-semibold tracking-[-0.05em] text-ink-950">
                   {item.value}
                 </p>
                 <p className="mt-2 text-sm font-medium text-ink-500">{item.reports}</p>
@@ -142,16 +152,17 @@ export function ReportsPage() {
             .map((group) => (
               <button
                 key={group.month}
-                className="flex w-full items-center justify-between rounded-[24px] border border-white/70 bg-white/75 px-6 py-4 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-card"
+                className="flex w-full items-center justify-between rounded-md border border-line bg-white px-5 py-4 text-left"
+                onClick={() => setOpenMonth(group.month)}
                 type="button"
               >
                 <div className="flex items-center gap-4">
                   <ChevronRight className="h-4 w-4 text-ink-400" />
-                  <span className="font-display text-xl font-bold tracking-[-0.03em] text-ink-900">
+                  <span className="text-lg font-semibold tracking-[-0.03em] text-ink-900">
                     {group.month}
                   </span>
                 </div>
-                <span className="rounded-full bg-[#f3eef0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink-500">
+                <span className="rounded-md bg-[#f3eef0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ink-500">
                   {group.count}
                 </span>
               </button>

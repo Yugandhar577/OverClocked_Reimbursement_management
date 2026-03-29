@@ -1,99 +1,154 @@
-import { HelpCircle, LogOut, Search, Settings2 } from 'lucide-react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { topNav } from '../../data/adminData.js'
-import { useAdminShellStore } from '../../stores/useAdminShellStore.js'
+import { LogOut, Settings2 } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { markAllNotificationsAsRead } from '../../api/notifications.api.js'
 import { useAuthStore } from '../../stores/useAuthStore.js'
-import { cn } from '../../utils/cn.js'
+import { useAdminShellStore } from '../../stores/useAdminShellStore.js'
 import { AvatarBadge } from '../shared/AvatarBadge.jsx'
 import { Button } from '../ui/button.jsx'
-import { Input } from '../ui/input.jsx'
 import { NotificationBell } from '../admin/NotificationBell.jsx'
 
-function getSection(pathname) {
-  if (
-    pathname.includes('/approval-rules') ||
-    pathname.includes('/categories') ||
-    pathname.includes('/import') ||
-    pathname.includes('/hierarchy')
-  ) {
-    return 'configuration'
+function getSectionMeta(pathname) {
+  if (pathname.includes('/approval-rules')) {
+    return {
+      eyebrow: 'Configuration',
+      title: 'Approval Rules',
+      copy: 'Tune approval sequencing, approvers, and policy thresholds.',
+    }
+  }
+
+  if (pathname.includes('/categories')) {
+    return {
+      eyebrow: 'Configuration',
+      title: 'Expense Categories',
+      copy: 'Keep policy categories, labels, and reporting buckets aligned.',
+    }
+  }
+
+  if (pathname.includes('/import')) {
+    return {
+      eyebrow: 'Configuration',
+      title: 'CSV Operations',
+      copy: 'Import and export expense records in bulk without leaving the admin shell.',
+    }
+  }
+
+  if (pathname.includes('/hierarchy')) {
+    return {
+      eyebrow: 'Configuration',
+      title: 'Organization Hierarchy',
+      copy: 'Review reporting lines and leadership structure before routing approvals.',
+    }
   }
 
   if (pathname.includes('/payments')) {
-    return 'payments'
+    return {
+      eyebrow: 'Finance Operations',
+      title: 'Reimbursement Settlements',
+      copy: 'Track approved payouts and settlement readiness without payment-provider clutter.',
+    }
   }
 
-  return pathname.split('/')[2] ?? 'dashboard'
+  if (pathname.includes('/employees')) {
+    return {
+      eyebrow: 'Admin Control',
+      title: 'Employee Directory',
+      copy: 'Review company roles, departments, and reporting ownership.',
+    }
+  }
+
+  if (pathname.includes('/expenses')) {
+    return {
+      eyebrow: 'Admin Control',
+      title: 'Expense Oversight',
+      copy: 'Track submitted, approved, and paid expenses across the company.',
+    }
+  }
+
+  if (pathname.includes('/reports')) {
+    return {
+      eyebrow: 'Admin Control',
+      title: 'Expense Reports',
+      copy: 'Monitor monthly report groupings, approval volume, and reimbursement status.',
+    }
+  }
+
+  return {
+    eyebrow: 'Admin Control',
+    title: 'Executive Summary',
+    copy: 'Review spend, approvals, and reimbursement activity from one clean control surface.',
+  }
 }
 
 export function AdminTopbar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const globalSearch = useAdminShellStore((state) => state.globalSearch)
-  const setGlobalSearch = useAdminShellStore((state) => state.setGlobalSearch)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
-  const currentSection = getSection(location.pathname)
-  const navItems =
-    user?.role === 'FINANCE'
-      ? topNav.filter((item) => item.section !== 'configuration')
-      : topNav
+  const notifications = useAdminShellStore((state) => state.notifications)
+  const unreadCount = useAdminShellStore((state) => state.unreadCount)
+  const setNotifications = useAdminShellStore((state) => state.setNotifications)
+  const section = getSectionMeta(location.pathname)
 
   const handleLogout = async () => {
     await logout()
     navigate('/login', { replace: true })
   }
 
-  return (
-    <header className="surface-soft sticky top-4 z-20 flex flex-col gap-4 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
-      <nav className="flex flex-wrap items-center gap-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            className={cn(
-              'rounded-2xl px-4 py-2.5 text-sm font-semibold transition',
-              currentSection === item.section
-                ? 'bg-white text-brand-900 shadow-soft'
-                : 'text-ink-500 hover:bg-white/70 hover:text-brand-900',
-            )}
-            to={item.href}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead()
+      setNotifications(
+        notifications.map((item) => ({
+          ...item,
+          isRead: true,
+        })),
+        0,
+      )
+    } catch {
+      setNotifications(notifications, unreadCount)
+    }
+  }
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="relative min-w-[16rem] flex-1 md:w-[21rem]">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-          <Input
-            className="border-white/80 bg-white/85 pl-10"
-            onChange={(event) => setGlobalSearch(event.target.value)}
-            placeholder="Search data..."
-            value={globalSearch}
-          />
+  return (
+    <header className="admin-topbar">
+      <div className="admin-topbar-inner">
+        <div className="min-w-0 space-y-1">
+          <p className="section-eyebrow">{section.eyebrow}</p>
+          <div className="space-y-1">
+            <h1 className="truncate text-[1.65rem] font-semibold tracking-[-0.04em] text-ink-950">
+              {section.title}
+            </h1>
+            <p className="truncate text-sm text-ink-500">{section.copy}</p>
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-2">
-          <NotificationBell />
-          <Button size="icon" variant="secondary">
-            <HelpCircle className="h-4 w-4" />
-            <span className="sr-only">Help</span>
-          </Button>
-          <Button size="icon" variant="secondary">
+
+        <div className="flex items-center gap-2">
+          <NotificationBell
+            notifications={notifications}
+            onMarkAllRead={handleMarkAllRead}
+            unreadCount={unreadCount}
+          />
+          <Button
+            onClick={() => navigate('/admin/approval-rules')}
+            size="icon"
+            variant="secondary"
+          >
             <Settings2 className="h-4 w-4" />
-            <span className="sr-only">Settings</span>
+            <span className="sr-only">Open configuration</span>
           </Button>
           <Button onClick={handleLogout} size="icon" variant="secondary">
             <LogOut className="h-4 w-4" />
             <span className="sr-only">Sign out</span>
           </Button>
-          <div className="flex items-center gap-3 rounded-[22px] border border-white/70 bg-white/85 px-3 py-2 shadow-soft">
-            <AvatarBadge initials={user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : 'NA'} />
+          <div className="flex items-center gap-3 rounded-md border border-line bg-[#fbfbfc] px-3 py-2">
+            <AvatarBadge
+              initials={user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : 'NA'}
+            />
             <div className="hidden min-w-0 md:block">
               <p className="truncate text-sm font-semibold text-ink-950">
                 {user ? `${user.firstName} ${user.lastName}`.trim() : 'Admin'}
               </p>
-              <p className="truncate text-xs uppercase tracking-[0.18em] text-ink-500">
+              <p className="truncate text-[11px] uppercase tracking-[0.12em] text-ink-500">
                 {user?.role ? String(user.role).replaceAll('_', ' ') : 'Enterprise Admin'}
               </p>
             </div>

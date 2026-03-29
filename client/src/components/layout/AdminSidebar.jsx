@@ -1,6 +1,6 @@
 import {
   BadgeIndianRupee,
-  CircleHelp,
+  FileSpreadsheet,
   FileText,
   LayoutDashboard,
   ReceiptText,
@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { primaryNav, shellBrand } from '../../data/adminData.js'
-import { useAuthStore } from '../../stores/useAuthStore.js'
 import { cn } from '../../utils/cn.js'
 
 const iconMap = {
@@ -22,51 +21,37 @@ const iconMap = {
   configuration: Settings2,
 }
 
-const utilityLinks = [
-  { label: 'Support', icon: CircleHelp },
-  { label: 'Documentation', icon: FileText },
+const quickLinks = [
+  { label: 'CSV Import', href: '/admin/import', icon: FileSpreadsheet },
+  { label: 'Reports', href: '/admin/reports', icon: FileText },
 ]
 
 export function AdminSidebar() {
-  const company = useAuthStore((state) => state.company)
-  const user = useAuthStore((state) => state.user)
-  const brandName = company?.name ?? shellBrand.name
-  const subtitle = user?.role ? String(user.role).replaceAll('_', ' ') : shellBrand.subtitle
-  const navItems =
-    user?.role === 'FINANCE'
-      ? primaryNav.filter((item) => item.section !== 'configuration')
-      : primaryNav
-
   return (
-    <aside className="surface-soft flex w-full flex-col gap-8 px-5 py-6 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-[17rem] lg:flex-none">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-700 to-brand-900 text-lg font-black uppercase tracking-[0.18em] text-white shadow-soft">
+    <aside className="admin-sidebar lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+      <div className="flex items-center gap-3 border-b border-line pb-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-900 text-sm font-black uppercase tracking-[0.18em] text-white">
           {shellBrand.initials}
         </div>
         <div className="space-y-1">
-          <p className="font-display text-lg font-black tracking-[-0.04em] text-ink-950">
-            {brandName}
+          <p className="text-base font-semibold tracking-[-0.03em] text-ink-950">
+            {shellBrand.name}
           </p>
-          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-ink-500">
-            {subtitle}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
+            {shellBrand.subtitle}
           </p>
         </div>
       </div>
 
-      <nav className="space-y-2">
-        {navItems.map((item) => {
+      <nav className="mt-4 space-y-1.5">
+        {primaryNav.map((item) => {
           const Icon = iconMap[item.section] ?? WalletCards
 
           return (
             <NavLink
               key={item.href}
               className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-brand-100/90 text-brand-950 shadow-soft ring-1 ring-brand-200'
-                    : 'text-ink-600 hover:bg-white/80 hover:text-brand-900',
-                )
+                cn('admin-sidebar-link', isActive && 'admin-sidebar-link-active')
               }
               to={item.href}
             >
@@ -77,28 +62,24 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="rounded-[28px] bg-gradient-to-br from-brand-800 to-brand-700 p-5 text-white shadow-float">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
-          Treasury Ops
+      <div className="mt-6 rounded-md border border-line bg-white px-4 py-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
+          Bulk Operations
         </p>
-        <p className="mt-3 font-display text-2xl font-black tracking-[-0.05em]">
-          Instant settlement
+        <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-ink-950">
+          Import and audit
         </p>
-        <p className="mt-2 text-sm leading-6 text-white/78">
-          Monitor enterprise reimbursements with approval-aware payout queues.
+        <p className="mt-2 text-sm leading-6 text-ink-600">
+          Keep settlements, reports, and transaction imports in the admin shell instead of the employee flow.
         </p>
       </div>
 
-      <div className="mt-auto space-y-2 border-t border-line/70 pt-6">
-        {utilityLinks.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-500 transition hover:bg-white/80 hover:text-brand-900"
-            type="button"
-          >
+      <div className="mt-5 space-y-1.5 border-t border-line pt-4">
+        {quickLinks.map(({ label, href, icon: Icon }) => (
+          <NavLink key={href} className="admin-sidebar-link" to={href}>
             <Icon className="h-4 w-4" />
             <span>{label}</span>
-          </button>
+          </NavLink>
         ))}
       </div>
     </aside>

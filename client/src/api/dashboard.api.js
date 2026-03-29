@@ -80,69 +80,74 @@ export async function getDashboardSummary() {
     .sort((left, right) => right[1] - left[1])
     .slice(0, 4)
   const maxDepartment = Math.max(...rankedDepartments.map((entry) => entry[1]), 1)
+  const liveKpis = [
+    {
+      label: 'Total Spend',
+      value: formatMoney(totalSpend),
+      trend: `${expenses.length} claims`,
+      note: 'All tracked company expenses',
+      tone: 'aqua',
+    },
+    {
+      label: 'Pending Approvals',
+      value: String(pendingApprovals.length),
+      trend: pendingApprovals.length ? 'Alert' : 'Clear',
+      note: 'Items waiting on approvers',
+      tone: 'amber',
+    },
+    {
+      label: 'Reimbursed',
+      value: formatMoney(
+        sumBy(reimbursed, (expense) => expense.convertedAmount ?? expense.totalAmount),
+      ),
+      trend: `${reimbursed.length} settled`,
+      note: 'Paid or completed reimbursements',
+      tone: 'aqua',
+    },
+    {
+      label: 'Avg. Approval Time',
+      value: `${average(approvalDurations).toFixed(1)} days`,
+      trend: `${users.length} users`,
+      note: 'Based on approved expenses',
+      tone: 'neutral',
+    },
+  ]
+  const liveTrend = monthBuckets.map((bucket, index) => ({
+    id: `${bucket.getFullYear()}-${bucket.getMonth()}`,
+    month: formatMonthLabel(bucket),
+    previousHeight: getHeightClass(currentValues[index - 1] ?? 0, maxTrend),
+    currentHeight: getHeightClass(currentValues[index], maxTrend),
+  }))
+  const liveCategoryBreakdown = topCategories.map(([label, amount], index) => ({
+    label,
+    share: totalSpend ? `${Math.round((amount / totalSpend) * 100)}%` : '0%',
+    dot: getCategoryDot(index),
+  }))
+  const liveDepartments = rankedDepartments.map(([name, amount]) => ({
+    name,
+    amount: formatMoney(amount),
+    widthClass: getWidthClass(amount, maxDepartment),
+  }))
+  const liveActivity = notifications.map((notification, index) => ({
+    actor: notification.title,
+    action: 'updated',
+    subject: notification.message,
+    amount: notification.type.replaceAll('_', ' '),
+    toneClass:
+      index % 3 === 0
+        ? 'bg-brand-100 text-brand-950'
+        : index % 3 === 1
+          ? 'bg-aqua-100 text-aqua-700'
+          : 'bg-amber-100 text-amber-700',
+    time: formatRelativeTime(notification.createdAt),
+    initials: getInitials(notification.title),
+  }))
 
   return {
-    kpis: [
-      {
-        label: 'Total Spend',
-        value: formatMoney(totalSpend),
-        trend: `${expenses.length} claims`,
-        note: 'All tracked company expenses',
-        tone: 'aqua',
-      },
-      {
-        label: 'Pending Approvals',
-        value: String(pendingApprovals.length),
-        trend: pendingApprovals.length ? 'Alert' : 'Clear',
-        note: 'Items waiting on approvers',
-        tone: 'amber',
-      },
-      {
-        label: 'Reimbursed',
-        value: formatMoney(
-          sumBy(reimbursed, (expense) => expense.convertedAmount ?? expense.totalAmount),
-        ),
-        trend: `${reimbursed.length} settled`,
-        note: 'Paid or completed reimbursements',
-        tone: 'aqua',
-      },
-      {
-        label: 'Avg. Approval Time',
-        value: `${average(approvalDurations).toFixed(1)} days`,
-        trend: `${users.length} users`,
-        note: 'Based on approved expenses',
-        tone: 'neutral',
-      },
-    ],
-    trend: monthBuckets.map((bucket, index) => ({
-      id: `${bucket.getFullYear()}-${bucket.getMonth()}`,
-      month: formatMonthLabel(bucket),
-      previousHeight: getHeightClass(currentValues[index - 1] ?? 0, maxTrend),
-      currentHeight: getHeightClass(currentValues[index], maxTrend),
-    })),
-    categoryBreakdown: topCategories.map(([label, amount], index) => ({
-      label,
-      share: totalSpend ? `${Math.round((amount / totalSpend) * 100)}%` : '0%',
-      dot: getCategoryDot(index),
-    })),
-    departments: rankedDepartments.map(([name, amount]) => ({
-      name,
-      amount: formatMoney(amount),
-      widthClass: getWidthClass(amount, maxDepartment),
-    })),
-    activity: notifications.map((notification, index) => ({
-      actor: notification.title,
-      action: 'updated',
-      subject: notification.message,
-      amount: notification.type.replaceAll('_', ' '),
-      toneClass:
-        index % 3 === 0
-          ? 'bg-brand-100 text-brand-950'
-          : index % 3 === 1
-            ? 'bg-aqua-100 text-aqua-700'
-            : 'bg-amber-100 text-amber-700',
-      time: formatRelativeTime(notification.createdAt),
-      initials: getInitials(notification.title),
-    })),
+    kpis: liveKpis,
+    trend: liveTrend,
+    categoryBreakdown: liveCategoryBreakdown,
+    departments: liveDepartments,
+    activity: liveActivity,
   }
 }

@@ -12,7 +12,7 @@ export function CardTitle({ className, ...props }) {
   return (
     <h3
       className={cn(
-        'font-display text-lg font-bold tracking-[-0.03em] text-ink-950',
+        'text-lg font-semibold tracking-[-0.03em] text-ink-950',
         className,
       )}
       {...props}
@@ -21,7 +21,7 @@ export function CardTitle({ className, ...props }) {
 }
 
 export function CardDescription({ className, ...props }) {
-  return <p className={cn('text-sm leading-6 text-ink-700', className)} {...props} />
+  return <p className={cn('text-sm leading-6 text-ink-600', className)} {...props} />
 }
 
 export function CardContent({ className, ...props }) {

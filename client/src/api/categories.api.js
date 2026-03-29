@@ -18,21 +18,23 @@ export async function getCategoryWorkspace() {
     .sort((left, right) => (right._count?.expenses ?? 0) - (left._count?.expenses ?? 0))
     .slice(0, 4)
   const maxUsage = Math.max(...rankedUsage.map((item) => item._count?.expenses ?? 0), 1)
+  const liveUsage = rankedUsage.map((category, index) => ({
+    label: category.name,
+    share: `${Math.round(((category._count?.expenses ?? 0) / Math.max(categories.length, 1)) * 100)}%`,
+    widthClass: getWidthClass(category._count?.expenses ?? 0, maxUsage),
+    toneClass: getUsageTone(index),
+  }))
+  const liveCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    code: category.code,
+    label: category.description ?? category.parent?.name ?? 'No description provided',
+    status: category.isActive ? 'Active' : 'Review',
+  }))
 
   return {
     summaryCount: categories.length,
-    usage: rankedUsage.map((category, index) => ({
-      label: category.name,
-      share: `${Math.round(((category._count?.expenses ?? 0) / Math.max(categories.length, 1)) * 100)}%`,
-      widthClass: getWidthClass(category._count?.expenses ?? 0, maxUsage),
-      toneClass: getUsageTone(index),
-    })),
-    categories: categories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      code: category.code,
-      label: category.description ?? category.parent?.name ?? 'No description provided',
-      status: category.isActive ? 'Active' : 'Review',
-    })),
+    usage: liveUsage,
+    categories: liveCategories,
   }
 }

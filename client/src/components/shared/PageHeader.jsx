@@ -10,19 +10,19 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between',
+        'flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between',
         className,
       )}
     >
-      <div className="max-w-2xl space-y-3">
+      <div className="max-w-2xl space-y-2">
         {eyebrow ? <p className="section-eyebrow">{eyebrow}</p> : null}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <h1 className="section-title">{title}</h1>
           {description ? <p className="section-copy">{description}</p> : null}
         </div>
       </div>
       {actions ? (
-        <div className="flex flex-wrap items-center gap-3">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
       ) : null}
     </div>
   )
