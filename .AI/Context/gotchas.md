@@ -2,37 +2,40 @@
 
 ## Approval Engine
 - **Circular reporting**: Prevent `reports_to` chains from forming cycles. Validate on CSV import and user update.
-- **Self-approval**: A manager CANNOT approve their own expenses. Their expense goes to THEIR `reports_to`.
-- **Approval limit escalation**: If `expense.converted_amount > manager.approval_limit`, auto-escalate to next level WITHOUT rejecting.
-- **Percentage math**: When `min_approval_percentage = 60` and there are 5 approvers, you need ceil(5 * 0.6) = 3 approvals. Don't use floor.
-- **VIP + Required conflict**: If a VIP approves but a required approver hasn't acted yet, the VIP takes priority. If a required approver REJECTS, it overrides even VIP approval.
+- **Self-approval**: A manager cannot approve their own expenses. Their expense should route to their `reports_to`.
+- **Approval limit escalation**: If `expense.converted_amount > manager.approval_limit`, auto-escalate to the next level without rejecting.
+- **Percentage math**: When `min_approval_percentage = 60` and there are 5 approvers, use `ceil(5 * 0.6) = 3`.
+- **VIP + Required conflict**: A required approver rejection still overrides the rest of the chain.
 
 ## Expense / Duplicate Detection
-- **Split expense conflicts**: When an employee splits expense A into A1 and A2, both belong to the same person. Don't flag A1 and A2 as duplicates of each other.
-- **Currency rounding**: Always use DECIMAL(12,2) not FLOAT. Use `toFixed(2)` on frontend, `ROUND()` in SQL.
-- **Exchange rate timing**: Capture and store the rate at submission time. Don't re-convert later.
-- **Duplicate detection window**: Same employee + same date ±1 day + amount within 10% = warning (NOT blocking).
+- **Split expense conflicts**: When an employee splits expense A into A1 and A2, both belong to the same person. Do not flag A1 and A2 as duplicates of each other.
+- **Currency rounding**: Always use `DECIMAL(12,2)` instead of `FLOAT`. Format carefully on the frontend and round deliberately on the backend.
+- **Exchange rate timing**: Capture and store the rate at submission time. Do not re-convert later.
+- **Duplicate detection window**: Same employee + same date +/- 1 day + amount within 10% should be a warning, not a blocker.
 
 ## CSV Import
-- **Email uniqueness**: If an email already exists, skip that row (don't error the whole batch).
-- **Missing manager**: If `reports_to_email` references someone not in the CSV AND not in the DB, skip relationship and flag warning.
-- **Department dedup**: CSV may have "Engineering", "engineering", "ENGINEERING" — normalize to title case.
-- **Position mapping**: Position is free-text from CSV, not enum. Don't validate it, just store it.
+- **Email uniqueness**: If an email already exists, skip that row instead of failing the whole batch.
+- **Missing manager**: If `reports_to_email` references someone missing from both the CSV and DB, skip the relationship and flag a warning.
+- **Department dedup**: Normalize department names like `Engineering`, `engineering`, and `ENGINEERING` to a shared title-case value.
+- **Position mapping**: Position is free text from CSV, not an enum.
 
 ## Auth
 - **Token refresh race**: If two tabs refresh at the same time, only one should succeed. Use token rotation.
-- **Password reset**: Generate a random temp password, hash with bcrypt. Force password change on first login after reset.
+- **Password reset**: Store only the SHA-256 hash of the reset token in the DB, keep the raw token only in the email link, and expire it after 1 hour.
+
+## Prisma
+- **Migration metadata**: `server/prisma/migrations/migration_lock.toml` must contain `provider = "postgresql"`. If it is empty, `prisma migrate dev` fails with `P3019` even when the SQL files are valid.
 
 ## OCR
-- **Mindee quota**: 250 pages/month free. Track usage. Fall back to OCR.space when quota exceeded.
-- **OCR accuracy**: Always let the user review and edit OCR-parsed data before submission. Never auto-submit.
-- **Image quality**: Reject blurry/dark images with warning. Check file size > 10KB (too small = blank).
+- **Mindee quota**: Track Mindee usage and fall back to OCR.space when quota is exhausted.
+- **OCR accuracy**: Always let the user review and edit OCR-parsed data before submission.
+- **Image quality**: Reject obviously blank or unusable images early.
 
 ## Razorpay
-- **Test mode**: Always use Razorpay Test Keys during development. Never commit real keys.
-- **Signature verification**: ALWAYS verify payment signature server-side before marking as paid. Never trust client-side callback alone.
+- **Test mode**: Always use Razorpay test keys during development.
+- **Signature verification**: Verify the payment signature server-side before marking an expense as paid.
 
 ## Frontend
-- **Tailwind purge**: Ensure `content` paths in `tailwind.config.js` include all JSX files, or classes will be purged in production.
-- **Mobile viewport**: Set `<meta name="viewport" content="width=device-width, initial-scale=1">` or mobile layout breaks.
-- **JWT in memory**: Store access token in memory (Zustand), NOT localStorage. Refresh token in httpOnly cookie only.
+- **Tailwind purge**: Ensure `content` paths in `tailwind.config.js` include all JSX files.
+- **Mobile viewport**: Set the viewport meta tag correctly or the mobile layout will break.
+- **JWT in memory**: Keep the access token in memory and the refresh token in an httpOnly cookie.
