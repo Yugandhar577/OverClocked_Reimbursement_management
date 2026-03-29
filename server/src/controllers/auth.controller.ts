@@ -91,6 +91,40 @@ export const refreshToken = async (
   }
 };
 
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    await authService.forgotPassword(req.body.email);
+
+    res.json({
+      success: true,
+      message: 'If an account exists for that email, a password reset link has been sent',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    await authService.resetPassword(req.body);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const logout = async (
   req: AuthenticatedRequest,
   res: Response,

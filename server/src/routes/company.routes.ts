@@ -11,6 +11,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', companyController.getCompany);
+router.get('/currencies', companyController.getCurrencies);
 router.put('/', requireAdmin, validateBody(updateCompanySchema), companyController.updateCompany);
 router.put('/settings', requireAdmin, validateBody(companySettingsSchema), companyController.updateSettings);
 router.get('/stats', requireAdmin, companyController.getStats);

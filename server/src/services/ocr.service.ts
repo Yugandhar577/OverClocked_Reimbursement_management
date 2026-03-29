@@ -1,6 +1,11 @@
 import fs from 'fs';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
+import {
+  extractReceiptAmount,
+  extractReceiptDate,
+  extractReceiptVendor,
+} from '../utils/ocr-parsing.js';
 
 interface OcrResult {
   rawText: string;
@@ -152,47 +157,9 @@ export class OcrService {
   }
 
   private parseRawText(text: string): OcrResult['parsedData'] {
-    // Amount patterns
-    const amountPatterns = [
-      /(?:total|amount|sum|grand total)[:\s]*\$?(\d+(?:[.,]\d{2})?)/i,
-      /\$(\d+(?:[.,]\d{2})?)/,
-      /(\d+(?:[.,]\d{2}))\s*(?:USD|EUR|GBP|INR)/i,
-    ];
-
-    // Date patterns
-    const datePatterns = [
-      /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
-      /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
-      /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})/i,
-    ];
-
-    let amount: number | undefined;
-    let date: string | undefined;
-    let vendor: string | undefined;
-
-    // Extract amount
-    for (const pattern of amountPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        amount = parseFloat(match[1].replace(',', '.'));
-        break;
-      }
-    }
-
-    // Extract date
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        date = match[1];
-        break;
-      }
-    }
-
-    // Extract vendor (usually the first line or first capitalized words)
-    const lines = text.split('\n').filter((l) => l.trim());
-    if (lines.length > 0) {
-      vendor = lines[0].trim().substring(0, 100);
-    }
+    const amount = extractReceiptAmount(text) ?? undefined;
+    const date = extractReceiptDate(text) ?? undefined;
+    const vendor = extractReceiptVendor(text) ?? undefined;
 
     return {
       amount,

@@ -1,21 +1,22 @@
 # MVP Feature Breakdown
 
-## P0 — Must Have (Demo-Critical)
+## P0 - Must Have (Demo-Critical)
 
 ### Auth & Onboarding
-- [ ] Company signup (name, country → auto currency)
+- [ ] Company signup (name, country -> auto currency)
 - [ ] Login / JWT auth
-- [ ] CSV employee import → auto-generate accounts + hierarchy
+- [x] Forgot / reset password flow (email token)
+- [ ] CSV employee import -> auto-generate accounts + hierarchy
 - [ ] Welcome email with credentials
 
 ### Expense Management
 - [ ] Create expense (title, amount, currency, category, date)
 - [ ] Add line items (description, amount, vendor, date)
 - [ ] Upload receipt image
-- [ ] OCR scan → pre-fill expense form (Mindee API)
-- [ ] Submit expense → triggers approval
+- [ ] OCR scan -> pre-fill expense form (Mindee API)
+- [ ] Submit expense -> triggers approval
 - [ ] View own expenses with status filters
-- [ ] Status pipeline: Draft → To Submit → Submitted → Approved → Done
+- [ ] Status pipeline: Draft -> To Submit -> Submitted -> Approved -> Done
 
 ### Approval Workflow
 - [ ] Manager sees pending approvals
@@ -33,20 +34,20 @@
 - [ ] Set approval limits per position
 - [ ] View org hierarchy tree
 
-## P1 — Should Have (Strong Demo)
+## P1 - Should Have (Strong Demo)
 
 ### Advanced Approval
 - [ ] Percentage-based approval (60% of approvers = approved)
-- [ ] VIP auto-approve (CFO approves → instant approve)
-- [ ] Required approver veto (Finance Head rejects → instant reject)
+- [ ] VIP auto-approve (CFO approves -> instant approve)
+- [ ] Required approver veto (Finance Head rejects -> instant reject)
 - [ ] Auto-escalation when expense exceeds manager's limit
 
 ### Expense Features
-- [ ] Expense splitting (like Odoo — split into sub-line-items)
+- [ ] Expense splitting (like Odoo -> split into sub-line-items)
 - [ ] Multi-currency with live conversion
 - [ ] Currency display in company's base currency
 - [ ] Duplicate expense detection (same date + similar amount)
-- [ ] Expense reports — group multiple expenses into period-based reports
+- [ ] Expense reports -> group multiple expenses into period-based reports
 
 ### UX
 - [ ] Threaded comments on expenses (Send message / Log note)
@@ -57,9 +58,9 @@
 
 ### Payments
 - [ ] Razorpay integration for reimbursement payouts
-- [ ] Payment status tracking (Unpaid → In Payment → Paid)
+- [ ] Payment status tracking (Unpaid -> In Payment -> Paid)
 
-## P2 — Could Have (Polish)
+## P2 - Could Have (Polish)
 
 - [ ] Analytics dashboard (spend by category, by department, trends)
 - [ ] Dark mode toggle

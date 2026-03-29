@@ -5,10 +5,21 @@ interface ExchangeRateResponse {
   rates: Record<string, number>;
 }
 
-interface CurrencyInfo {
+export interface CurrencyInfo {
   code: string;
   name: string;
   symbol?: string;
+}
+
+interface RestCountryResponse {
+  name?: {
+    common?: string;
+    official?: string;
+  };
+  currencies?: Record<string, { name?: string; symbol?: string }>;
+  cca2?: string;
+  cca3?: string;
+  altSpellings?: string[];
 }
 
 // Cache for exchange rates (5 minute TTL)
@@ -17,6 +28,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Cache for country->currency mapping
 let countryCurrencyMap: Map<string, CurrencyInfo> | null = null;
+
+const normalizeCountryIdentifier = (value: string): string => value.trim().toUpperCase();
 
 export class CurrencyService {
   async getExchangeRates(baseCurrency: string): Promise<Record<string, number>> {
@@ -34,7 +47,7 @@ export class CurrencyService {
         throw new Error(`Exchange rate API error: ${response.status}`);
       }
 
-      const data: ExchangeRateResponse = await response.json();
+      const data = await response.json() as ExchangeRateResponse;
 
       rateCache.set(baseCurrency, {
         rates: data,
@@ -74,26 +87,46 @@ export class CurrencyService {
 
     try {
       const response = await fetch(
-        'https://restcountries.com/v3.1/all?fields=name,currencies'
+        'https://restcountries.com/v3.1/all?fields=name,currencies,cca2,cca3,altSpellings'
       );
 
       if (!response.ok) {
         throw new Error(`RestCountries API error: ${response.status}`);
       }
 
-      const countries = await response.json();
+      const countries = await response.json() as RestCountryResponse[];
       countryCurrencyMap = new Map();
 
       for (const country of countries) {
-        if (country.currencies) {
-          const currencyCode = Object.keys(country.currencies)[0];
-          const currencyData = country.currencies[currencyCode];
+        if (!country.currencies) {
+          continue;
+        }
 
-          countryCurrencyMap.set(country.name.common, {
-            code: currencyCode,
-            name: currencyData.name,
-            symbol: currencyData.symbol,
-          });
+        const currencyCode = Object.keys(country.currencies)[0];
+        const currencyData = country.currencies[currencyCode];
+
+        if (!currencyCode || !currencyData) {
+          continue;
+        }
+
+        const currencyInfo: CurrencyInfo = {
+          code: currencyCode,
+          name: currencyData.name || currencyCode,
+          symbol: currencyData.symbol,
+        };
+
+        const lookupKeys = [
+          country.name?.common,
+          country.name?.official,
+          country.cca2,
+          country.cca3,
+          ...(country.altSpellings || []),
+        ]
+          .filter((value): value is string => Boolean(value?.trim()))
+          .map((value) => normalizeCountryIdentifier(value));
+
+        for (const key of lookupKeys) {
+          countryCurrencyMap.set(key, currencyInfo);
         }
       }
 
@@ -105,9 +138,13 @@ export class CurrencyService {
     }
   }
 
-  async getCurrencyForCountry(countryName: string): Promise<CurrencyInfo | null> {
+  async getCurrencyByCountry(countryCode: string): Promise<CurrencyInfo | null> {
     const map = await this.getCountryCurrencyMap();
-    return map.get(countryName) || null;
+    return map.get(normalizeCountryIdentifier(countryCode)) || null;
+  }
+
+  async getCurrencyForCountry(countryName: string): Promise<CurrencyInfo | null> {
+    return this.getCurrencyByCountry(countryName);
   }
 
   async getSupportedCurrencies(): Promise<string[]> {

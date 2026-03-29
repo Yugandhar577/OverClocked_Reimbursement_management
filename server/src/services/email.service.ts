@@ -65,6 +65,33 @@ export class EmailService {
     return this.sendEmail({ to, subject, html });
   }
 
+  async sendPasswordResetEmail(
+    to: string,
+    firstName: string,
+    resetLink: string
+  ): Promise<boolean> {
+    const subject = 'Reset your password';
+    const html = `
+      <h2>Password Reset Request</h2>
+      <p>Dear ${firstName},</p>
+      <p>We received a request to reset your password.</p>
+      <p><a href="${resetLink}">Click here to reset your password</a></p>
+      <p>This link will expire in 1 hour.</p>
+      <p>If you did not request this change, you can safely ignore this email.</p>
+      <p>Best regards,<br>Reimbursement System</p>
+    `;
+    const text = [
+      `Hello ${firstName},`,
+      '',
+      'We received a request to reset your password.',
+      `Reset link: ${resetLink}`,
+      'This link will expire in 1 hour.',
+      'If you did not request this change, you can safely ignore this email.',
+    ].join('\n');
+
+    return this.sendEmail({ to, subject, html, text });
+  }
+
   async sendExpenseSubmittedEmail(
     to: string,
     approverName: string,

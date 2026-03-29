@@ -6,6 +6,11 @@ import { logger } from '../utils/logger.js';
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import {
+  extractReceiptAmount,
+  extractReceiptDate,
+  extractReceiptVendor,
+} from '../utils/ocr-parsing.js';
 
 interface OcrResult {
   vendor?: string;
@@ -14,6 +19,28 @@ interface OcrResult {
   date?: string;
   rawText?: string;
   items?: Array<{ description: string; amount: number }>;
+}
+
+interface MindeeReceiptPrediction {
+  supplier_name?: { value?: string };
+  total_amount?: { value?: number };
+  locale?: { currency?: string };
+  date?: { value?: string };
+  line_items?: Array<{ description: string; total_amount: number }>;
+}
+
+interface MindeeReceiptResponse {
+  document?: {
+    inference?: {
+      prediction?: MindeeReceiptPrediction;
+    };
+  };
+}
+
+interface OcrSpaceResponse {
+  ParsedResults?: Array<{
+    ParsedText?: string;
+  }>;
 }
 
 export class ReceiptService {
@@ -173,7 +200,7 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = await response.json() as MindeeReceiptResponse;
       const prediction = data.document?.inference?.prediction;
 
       if (!prediction) {
@@ -186,7 +213,7 @@ export class ReceiptService {
         currency: prediction.locale?.currency,
         date: prediction.date?.value,
         rawText: JSON.stringify(prediction),
-        items: prediction.line_items?.map((item: any) => ({
+        items: prediction.line_items?.map((item) => ({
           description: item.description,
           amount: item.total_amount,
         })),
@@ -221,19 +248,18 @@ export class ReceiptService {
         return null;
       }
 
-      const data = await response.json();
+      const data = await response.json() as OcrSpaceResponse;
       const parsedText = data.ParsedResults?.[0]?.ParsedText;
 
       if (!parsedText) {
         return null;
       }
 
-      // Basic extraction from raw text
-      const amountMatch = parsedText.match(/\$?\s*([\d,]+\.?\d*)/);
-
       return {
         rawText: parsedText,
-        amount: amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : undefined,
+        amount: extractReceiptAmount(parsedText) ?? undefined,
+        date: extractReceiptDate(parsedText) ?? undefined,
+        vendor: extractReceiptVendor(parsedText) ?? undefined,
       };
     } catch (error) {
       logger.error('OCR.space error', error);

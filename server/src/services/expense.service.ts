@@ -97,7 +97,11 @@ export class ExpenseService {
 
     // Authorization check
     const isOwner = expense.creatorId === userId;
-    const isAdmin = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.FINANCE].includes(userRole as UserRole);
+    const isAdmin = new Set<string>([
+      UserRole.SUPER_ADMIN,
+      UserRole.ADMIN,
+      UserRole.FINANCE,
+    ]).has(userRole);
     const isApprover = expense.approvalSteps.some((step) => step.approverId === userId);
 
     if (!isOwner && !isAdmin && !isApprover) {

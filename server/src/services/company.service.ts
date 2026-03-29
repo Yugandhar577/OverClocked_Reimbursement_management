@@ -1,4 +1,5 @@
 import prisma from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../utils/errors.js';
 import {
   CreateCompanyInput,
@@ -29,9 +30,15 @@ export class CompanyService {
   }
 
   async update(companyId: string, input: UpdateCompanyInput) {
+    const { settings, ...rest } = input;
+    const data: Prisma.CompanyUpdateInput = {
+      ...rest,
+      ...(settings !== undefined ? { settings: settings as Prisma.InputJsonValue } : {}),
+    };
+
     const company = await prisma.company.update({
       where: { id: companyId },
-      data: input,
+      data,
     });
 
     return company;
@@ -46,8 +53,8 @@ export class CompanyService {
       throw new NotFoundError('Company not found');
     }
 
-    const currentSettings = (company.settings as Record<string, unknown>) || {};
-    const mergedSettings = { ...currentSettings, ...settings };
+    const currentSettings = (company.settings as Prisma.JsonObject | null) || {};
+    const mergedSettings: Prisma.InputJsonObject = { ...currentSettings, ...settings };
 
     return prisma.company.update({
       where: { id: companyId },

@@ -11,16 +11,16 @@ export const getExpenses = async (
   try {
     const filters = expenseFilterSchema.parse(req.query);
 
-    const result = await expenseService.getAll(
-      req.user!.companyId,
+    const result = await expenseService.listExpenses(
       req.user!.userId,
+      req.user!.companyId,
       req.user!.role,
       filters
     );
 
     res.json({
       success: true,
-      data: result.data,
+      data: result.expenses,
       pagination: result.pagination,
     });
   } catch (error) {
@@ -34,9 +34,10 @@ export const getExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.getById(
+    const expense = await expenseService.getExpense(
       req.params.id,
       req.user!.userId,
+      req.user!.companyId,
       req.user!.role
     );
 
@@ -55,7 +56,7 @@ export const createExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.create(
+    const expense = await expenseService.createExpense(
       req.user!.userId,
       req.user!.companyId,
       req.body
@@ -76,10 +77,10 @@ export const updateExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.update(
+    const expense = await expenseService.updateExpense(
       req.params.id,
       req.user!.userId,
-      req.user!.role,
+      req.user!.companyId,
       req.body
     );
 
@@ -98,10 +99,10 @@ export const deleteExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await expenseService.delete(
+    await expenseService.deleteExpense(
       req.params.id,
       req.user!.userId,
-      req.user!.role
+      req.user!.companyId
     );
 
     res.json({
@@ -119,9 +120,10 @@ export const submitExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.submit(
+    const expense = await expenseService.submitExpense(
       req.params.id,
-      req.user!.userId
+      req.user!.userId,
+      req.user!.companyId
     );
 
     res.json({
@@ -141,7 +143,7 @@ export const addLine = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const line = await expenseService.addLine(
+    const line = await expenseService.addExpenseLine(
       req.params.id,
       req.user!.userId,
       req.body
@@ -162,7 +164,8 @@ export const updateLine = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const line = await expenseService.updateLine(
+    const line = await expenseService.updateExpenseLine(
+      req.params.id,
       req.params.lineId,
       req.user!.userId,
       req.body
@@ -183,7 +186,8 @@ export const deleteLine = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await expenseService.deleteLine(
+    await expenseService.deleteExpenseLine(
+      req.params.id,
       req.params.lineId,
       req.user!.userId
     );

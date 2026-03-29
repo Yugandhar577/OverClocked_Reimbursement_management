@@ -11,6 +11,10 @@ export const config = {
     url: process.env.DATABASE_URL || '',
   },
 
+  defaults: {
+    baseCurrency: process.env.DEFAULT_BASE_CURRENCY || 'USD',
+  },
+
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'default-access-secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
