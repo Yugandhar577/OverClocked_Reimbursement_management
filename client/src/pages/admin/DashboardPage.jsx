@@ -52,7 +52,7 @@ export function DashboardPage() {
             </CardHeader>
             <div className="grid min-h-[19rem] grid-cols-7 items-end gap-4">
               {data.trend.map((item) => (
-                <div key={item.month} className="flex flex-col items-center gap-3">
+                <div key={item.id} className="flex flex-col items-center gap-3">
                   <div className="flex h-56 items-end gap-2">
                     <div
                       className={`w-6 rounded-t-full bg-[#ede5e7] ${item.previousHeight}`}

@@ -1,7 +1,8 @@
-import { HelpCircle, Search, Settings2 } from 'lucide-react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { HelpCircle, LogOut, Search, Settings2 } from 'lucide-react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { topNav } from '../../data/adminData.js'
 import { useAdminShellStore } from '../../stores/useAdminShellStore.js'
+import { useAuthStore } from '../../stores/useAuthStore.js'
 import { cn } from '../../utils/cn.js'
 import { AvatarBadge } from '../shared/AvatarBadge.jsx'
 import { Button } from '../ui/button.jsx'
@@ -26,11 +27,18 @@ function getSection(pathname) {
 }
 
 export function AdminTopbar() {
+  const navigate = useNavigate()
   const location = useLocation()
-  const profile = useAdminShellStore((state) => state.profile)
   const globalSearch = useAdminShellStore((state) => state.globalSearch)
   const setGlobalSearch = useAdminShellStore((state) => state.setGlobalSearch)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
   const currentSection = getSection(location.pathname)
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="surface-soft sticky top-4 z-20 flex flex-col gap-4 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
@@ -71,12 +79,18 @@ export function AdminTopbar() {
             <Settings2 className="h-4 w-4" />
             <span className="sr-only">Settings</span>
           </Button>
+          <Button onClick={handleLogout} size="icon" variant="secondary">
+            <LogOut className="h-4 w-4" />
+            <span className="sr-only">Sign out</span>
+          </Button>
           <div className="flex items-center gap-3 rounded-[22px] border border-white/70 bg-white/85 px-3 py-2 shadow-soft">
-            <AvatarBadge initials={profile.initials} />
+            <AvatarBadge initials={user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : 'NA'} />
             <div className="hidden min-w-0 md:block">
-              <p className="truncate text-sm font-semibold text-ink-950">{profile.name}</p>
+              <p className="truncate text-sm font-semibold text-ink-950">
+                {user ? `${user.firstName} ${user.lastName}`.trim() : 'Admin'}
+              </p>
               <p className="truncate text-xs uppercase tracking-[0.18em] text-ink-500">
-                {profile.role}
+                {user?.role ? String(user.role).replaceAll('_', ' ') : 'Enterprise Admin'}
               </p>
             </div>
           </div>

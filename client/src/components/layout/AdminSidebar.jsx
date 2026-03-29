@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { primaryNav, shellBrand } from '../../data/adminData.js'
+import { useAuthStore } from '../../stores/useAuthStore.js'
 import { cn } from '../../utils/cn.js'
 
 const iconMap = {
@@ -27,6 +28,11 @@ const utilityLinks = [
 ]
 
 export function AdminSidebar() {
+  const company = useAuthStore((state) => state.company)
+  const user = useAuthStore((state) => state.user)
+  const brandName = company?.name ?? shellBrand.name
+  const subtitle = user?.role ? String(user.role).replaceAll('_', ' ') : shellBrand.subtitle
+
   return (
     <aside className="surface-soft flex w-full flex-col gap-8 px-5 py-6 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-[17rem] lg:flex-none">
       <div className="flex items-center gap-4">
@@ -35,10 +41,10 @@ export function AdminSidebar() {
         </div>
         <div className="space-y-1">
           <p className="font-display text-lg font-black tracking-[-0.04em] text-ink-950">
-            {shellBrand.name}
+            {brandName}
           </p>
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-ink-500">
-            {shellBrand.subtitle}
+            {subtitle}
           </p>
         </div>
       </div>
