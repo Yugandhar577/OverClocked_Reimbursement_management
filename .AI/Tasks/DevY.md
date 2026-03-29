@@ -1,4 +1,4 @@
-# DevY — Pillar 1: Backend Core + Database
+# DevY - Pillar 1: Backend Core + Database
 
 ## Ownership
 **Everything under `server/`** except approval engine and payment service.
@@ -16,13 +16,13 @@
 - Expense lines API
 - Receipt upload + storage
 - CSV import service (parse, validate, bulk insert, hierarchy builder)
-- Email service (Nodemailer + Gmail SMTP — credential emails)
+- Email service (Nodemailer + Gmail SMTP - credential emails)
 - Currency service (RestCountries + ExchangeRate API + caching)
 - Error handling middleware
 - Zod validation schemas
 
 ## Key Files
-```
+```text
 server/prisma/schema.prisma
 server/src/index.ts
 server/src/config/*
@@ -77,4 +77,5 @@ server/src/utils/*
 | 2026-03-29 | Created routes | `server/src/routes/auth.routes.ts`, `server/src/routes/company.routes.ts`, `server/src/routes/user.routes.ts`, `server/src/routes/department.routes.ts`, `server/src/routes/category.routes.ts`, `server/src/routes/expense.routes.ts`, `server/src/routes/receipt.routes.ts` | Express router definitions |
 | 2026-03-29 | Created main server entry point | `server/src/index.ts` | Express app with CORS, middleware stack, route mounting, health check |
 | 2026-03-29 | Created OCR service | `server/src/services/ocr.service.ts` | Receipt OCR using Mindee API with OCR.space fallback |
+| 2026-03-29 | Integrated core backend with DevSK modules and fixed strict TypeScript build issues in shared/core files | `server/src/controllers/expense.controller.ts`, `server/src/services/expense.service.ts`, `server/src/middleware/validate.ts`, `server/src/middleware/errorHandler.ts`, `server/src/middleware/upload.ts`, `server/src/services/company.service.ts`, `server/src/services/currency.service.ts`, `server/src/services/receipt.service.ts` | Aligned controller/service method contracts, tightened type-safety, and kept core APIs compatible with the new approval/payment flows |
 | 2026-03-29 | Applied Prisma migrations, added password reset flow, exposed currencies endpoint, and improved OCR fallback parsing | `server/package.json`, `server/.env.example`, `server/prisma/schema.prisma`, `server/prisma/migrations/20260329000000_init/migration.sql`, `server/prisma/migrations/20260329000001_add_reset_token/migration.sql`, `server/prisma/migrations/migration_lock.toml`, `server/src/routes/auth.routes.ts`, `server/src/controllers/auth.controller.ts`, `server/src/controllers/company.controller.ts`, `server/src/controllers/expense.controller.ts`, `server/src/services/auth.service.ts`, `server/src/services/company.service.ts`, `server/src/services/currency.service.ts`, `server/src/services/email.service.ts`, `server/src/services/expense.service.ts`, `server/src/services/ocr.service.ts`, `server/src/services/receipt.service.ts`, `server/src/validators/auth.validator.ts`, `server/src/middleware/errorHandler.ts`, `server/src/middleware/upload.ts`, `server/src/config/index.ts`, `server/src/utils/ocr-parsing.ts` | Verified `prisma migrate dev`, `prisma generate`, `prisma migrate status`, and `npm run build` against a temporary local Postgres |

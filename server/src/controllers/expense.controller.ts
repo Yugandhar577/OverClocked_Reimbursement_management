@@ -1,7 +1,7 @@
-import { Response, NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 import { expenseService } from '../services/expense.service.js';
 import { expenseFilterSchema } from '../validators/expense.validator.js';
-import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const getExpenses = async (
   req: AuthenticatedRequest,
@@ -10,17 +10,16 @@ export const getExpenses = async (
 ): Promise<void> => {
   try {
     const filters = expenseFilterSchema.parse(req.query);
-
-    const result = await expenseService.listExpenses(
-      req.user!.userId,
+    const result = await expenseService.getAll(
       req.user!.companyId,
+      req.user!.userId,
       req.user!.role,
       filters
     );
 
     res.json({
       success: true,
-      data: result.expenses,
+      data: result.data,
       pagination: result.pagination,
     });
   } catch (error) {
@@ -34,10 +33,10 @@ export const getExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.getExpense(
+    const expense = await expenseService.getById(
       req.params.id,
-      req.user!.userId,
       req.user!.companyId,
+      req.user!.userId,
       req.user!.role
     );
 
@@ -56,7 +55,7 @@ export const createExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.createExpense(
+    const expense = await expenseService.create(
       req.user!.userId,
       req.user!.companyId,
       req.body
@@ -77,10 +76,10 @@ export const updateExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.updateExpense(
+    const expense = await expenseService.update(
       req.params.id,
       req.user!.userId,
-      req.user!.companyId,
+      req.user!.role,
       req.body
     );
 
@@ -99,10 +98,10 @@ export const deleteExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await expenseService.deleteExpense(
+    await expenseService.delete(
       req.params.id,
       req.user!.userId,
-      req.user!.companyId
+      req.user!.role
     );
 
     res.json({
@@ -120,7 +119,7 @@ export const submitExpense = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const expense = await expenseService.submitExpense(
+    const result = await expenseService.submit(
       req.params.id,
       req.user!.userId,
       req.user!.companyId
@@ -128,7 +127,8 @@ export const submitExpense = async (
 
     res.json({
       success: true,
-      data: expense,
+      data: result.expense,
+      duplicateWarnings: result.duplicateWarnings,
       message: 'Expense submitted for approval',
     });
   } catch (error) {
@@ -136,14 +136,13 @@ export const submitExpense = async (
   }
 };
 
-// Expense Lines
 export const addLine = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const line = await expenseService.addExpenseLine(
+    const line = await expenseService.addLine(
       req.params.id,
       req.user!.userId,
       req.body
@@ -164,8 +163,7 @@ export const updateLine = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const line = await expenseService.updateExpenseLine(
-      req.params.id,
+    const line = await expenseService.updateLine(
       req.params.lineId,
       req.user!.userId,
       req.body
@@ -186,8 +184,7 @@ export const deleteLine = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await expenseService.deleteExpenseLine(
-      req.params.id,
+    await expenseService.deleteLine(
       req.params.lineId,
       req.user!.userId
     );

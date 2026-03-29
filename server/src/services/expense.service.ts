@@ -1,50 +1,114 @@
+import { Prisma, ExpenseStatus, UserRole } from '@prisma/client';
 import prisma from '../config/database.js';
-import { NotFoundError, BadRequestError } from '../utils/errors.js';
+import { BadRequestError, NotFoundError } from '../utils/errors.js';
 import {
   CreateExpenseInput,
-  UpdateExpenseInput,
-  ExpenseLineInput,
   ExpenseFilterInput,
+  ExpenseLineInput,
+  UpdateExpenseInput,
+  UpdateExpenseLineInput,
 } from '../validators/expense.validator.js';
-import { ExpenseStatus, UserRole, Prisma } from '@prisma/client';
+import { approvalEngineService } from './approval.engine.js';
 
 export class ExpenseService {
-  async createExpense(
-    creatorId: string,
+  async getAll(
     companyId: string,
-    input: CreateExpenseInput
+    userId: string,
+    userRole: string,
+    filters: ExpenseFilterInput
   ) {
-    return prisma.expense.create({
-      data: {
-        companyId,
-        creatorId,
-        categoryId: input.categoryId,
-        title: input.title,
-        description: input.description,
-        totalAmount: input.totalAmount,
-        currency: input.currency || 'USD',
-        expenseDate: new Date(input.expenseDate),
-        status: ExpenseStatus.DRAFT,
-      },
-      include: {
-        category: true,
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      categoryId,
+      creatorId,
+      fromDate,
+      toDate,
+      minAmount,
+      maxAmount,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filters;
+
+    const where: Prisma.ExpenseWhereInput = {
+      companyId,
+      ...(status && { status }),
+      ...(categoryId && { categoryId }),
+      ...(fromDate && { expenseDate: { gte: new Date(fromDate) } }),
+      ...(toDate && { expenseDate: { lte: new Date(toDate) } }),
+      ...(minAmount && { totalAmount: { gte: minAmount } }),
+      ...(maxAmount && { totalAmount: { lte: maxAmount } }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    if (userRole === UserRole.EMPLOYEE) {
+      where.creatorId = userId;
+    } else if (userRole === UserRole.MANAGER) {
+      where.OR = [
+        { creatorId: userId },
+        {
+          approvalSteps: {
+            some: { approverId: userId },
           },
         },
-        expenseLines: true,
-        receipts: true,
+      ];
+    } else if (creatorId) {
+      where.creatorId = creatorId;
+    }
+
+    const skip = (page - 1) * limit;
+    const [expenses, total] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        include: {
+          category: true,
+          creator: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              expenseLines: true,
+              receipts: true,
+              comments: true,
+            },
+          },
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      prisma.expense.count({ where }),
+    ]);
+
+    return {
+      data: expenses,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
   }
 
-  async getExpense(expenseId: string, userId: string, companyId: string, userRole: string) {
+  async getById(expenseId: string, companyId: string, userId: string, userRole: string) {
     const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, companyId },
+      where: {
+        id: expenseId,
+        companyId,
+      },
       include: {
         category: true,
         creator: {
@@ -95,143 +159,33 @@ export class ExpenseService {
       throw new NotFoundError('Expense not found');
     }
 
-    // Authorization check
+    const role = userRole as UserRole;
+    const isAdmin =
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.ADMIN ||
+      role === UserRole.FINANCE;
     const isOwner = expense.creatorId === userId;
-    const isAdmin = new Set<string>([
-      UserRole.SUPER_ADMIN,
-      UserRole.ADMIN,
-      UserRole.FINANCE,
-    ]).has(userRole);
     const isApprover = expense.approvalSteps.some((step) => step.approverId === userId);
 
-    if (!isOwner && !isAdmin && !isApprover) {
+    if (!isAdmin && !isOwner && !isApprover) {
       throw new NotFoundError('Expense not found');
     }
 
     return expense;
   }
 
-  async listExpenses(
-    userId: string,
-    companyId: string,
-    userRole: string,
-    filters: ExpenseFilterInput
-  ) {
-    const {
-      page = 1,
-      limit = 20,
-      status,
-      categoryId,
-      creatorId,
-      fromDate,
-      toDate,
-      minAmount,
-      maxAmount,
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = filters;
-
-    const skip = (page - 1) * limit;
-
-    // Build where clause based on role
-    const where: Prisma.ExpenseWhereInput = {
-      companyId,
-      ...(status && { status }),
-      ...(categoryId && { categoryId }),
-      ...(fromDate && { expenseDate: { gte: new Date(fromDate) } }),
-      ...(toDate && { expenseDate: { lte: new Date(toDate) } }),
-      ...(minAmount && { totalAmount: { gte: minAmount } }),
-      ...(maxAmount && { totalAmount: { lte: maxAmount } }),
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
-
-    // Role-based filtering
-    if (userRole === UserRole.EMPLOYEE) {
-      where.creatorId = userId;
-    } else if (userRole === UserRole.MANAGER) {
-      where.OR = [
-        { creatorId: userId },
-        {
-          approvalSteps: {
-            some: { approverId: userId },
-          },
-        },
-      ];
-    } else if (creatorId) {
-      where.creatorId = creatorId;
-    }
-
-    const [expenses, total] = await Promise.all([
-      prisma.expense.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          category: true,
-          creator: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          _count: {
-            select: {
-              expenseLines: true,
-              receipts: true,
-            },
-          },
-        },
-        orderBy: { [sortBy]: sortOrder },
-      }),
-      prisma.expense.count({ where }),
-    ]);
-
-    return {
-      expenses,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async updateExpense(
-    expenseId: string,
-    userId: string,
-    companyId: string,
-    input: UpdateExpenseInput
-  ) {
-    const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, companyId, creatorId: userId },
-    });
-
-    if (!expense) {
-      throw new NotFoundError('Expense not found');
-    }
-
-    if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestError('Can only update draft expenses');
-    }
-
-    return prisma.expense.update({
-      where: { id: expenseId },
+  async create(userId: string, companyId: string, input: CreateExpenseInput) {
+    return prisma.expense.create({
       data: {
-        ...(input.title && { title: input.title }),
-        ...(input.description !== undefined && { description: input.description }),
-        ...(input.totalAmount && { totalAmount: input.totalAmount }),
-        ...(input.currency && { currency: input.currency }),
-        ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
-        ...(input.expenseDate && { expenseDate: new Date(input.expenseDate) }),
+        companyId,
+        creatorId: userId,
+        categoryId: input.categoryId ?? null,
+        title: input.title,
+        description: input.description ?? null,
+        totalAmount: input.totalAmount,
+        currency: input.currency ?? 'USD',
+        expenseDate: new Date(input.expenseDate),
+        status: ExpenseStatus.DRAFT,
       },
       include: {
         category: true,
@@ -249,50 +203,21 @@ export class ExpenseService {
     });
   }
 
-  async deleteExpense(expenseId: string, userId: string, companyId: string) {
-    const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, companyId, creatorId: userId },
-    });
-
-    if (!expense) {
-      throw new NotFoundError('Expense not found');
-    }
-
-    if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestError('Can only delete draft expenses');
-    }
-
-    await prisma.expense.delete({
-      where: { id: expenseId },
-    });
-  }
-
-  async submitExpense(expenseId: string, userId: string, companyId: string) {
-    const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, companyId, creatorId: userId },
-      include: {
-        creator: {
-          include: {
-            reportsTo: true,
-          },
-        },
-      },
-    });
-
-    if (!expense) {
-      throw new NotFoundError('Expense not found');
-    }
-
+  async update(expenseId: string, userId: string, userRole: string, input: UpdateExpenseInput) {
+    const expense = await this.getMutableExpense(expenseId, userId, userRole);
     if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Expense cannot be submitted');
+      throw new BadRequestError('Can only update draft expenses');
     }
 
-    // Update expense to submitted status (approval engine will create steps)
     return prisma.expense.update({
       where: { id: expenseId },
       data: {
-        status: ExpenseStatus.SUBMITTED,
-        submittedAt: new Date(),
+        ...(input.title !== undefined && { title: input.title }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.totalAmount !== undefined && { totalAmount: input.totalAmount }),
+        ...(input.currency !== undefined && { currency: input.currency }),
+        ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
+        ...(input.expenseDate !== undefined && { expenseDate: new Date(input.expenseDate) }),
       },
       include: {
         category: true,
@@ -304,32 +229,53 @@ export class ExpenseService {
             email: true,
           },
         },
+        expenseLines: true,
+        receipts: true,
       },
     });
   }
 
-  // Expense Lines
-  async addExpenseLine(expenseId: string, userId: string, input: ExpenseLineInput) {
+  async delete(expenseId: string, userId: string, userRole: string) {
+    const expense = await this.getMutableExpense(expenseId, userId, userRole);
+    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
+      throw new BadRequestError('Can only delete draft expenses');
+    }
+
+    await prisma.expense.delete({ where: { id: expenseId } });
+  }
+
+  async submit(expenseId: string, userId: string, companyId: string) {
+    return approvalEngineService.submitExpenseForApproval(expenseId, companyId, userId);
+  }
+
+  async addLine(expenseId: string, userId: string, input: ExpenseLineInput) {
     const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, creatorId: userId },
+      where: {
+        id: expenseId,
+        creatorId: userId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
     });
 
     if (!expense) {
       throw new NotFoundError('Expense not found');
     }
 
-    if (expense.status !== ExpenseStatus.DRAFT) {
+    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
       throw new BadRequestError('Can only add lines to draft expenses');
     }
 
     const line = await prisma.expenseLine.create({
       data: {
         expenseId,
-        categoryId: input.categoryId,
+        categoryId: input.categoryId ?? null,
         description: input.description,
         amount: input.amount,
-        currency: input.currency || 'USD',
-        vendor: input.vendor,
+        currency: input.currency ?? 'USD',
+        vendor: input.vendor ?? null,
         lineDate: new Date(input.lineDate),
       },
       include: {
@@ -337,83 +283,114 @@ export class ExpenseService {
       },
     });
 
-    // Update total amount on expense
     await this.recalculateExpenseTotal(expenseId);
-
     return line;
   }
 
-  async updateExpenseLine(
-    expenseId: string,
-    lineId: string,
-    userId: string,
-    input: Partial<ExpenseLineInput>
-  ) {
-    const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, creatorId: userId },
+  async updateLine(lineId: string, userId: string, input: UpdateExpenseLineInput) {
+    const line = await prisma.expenseLine.findUnique({
+      where: { id: lineId },
+      include: {
+        expense: {
+          select: {
+            id: true,
+            creatorId: true,
+            status: true,
+          },
+        },
+      },
     });
 
-    if (!expense) {
-      throw new NotFoundError('Expense not found');
+    if (!line || line.expense.creatorId !== userId) {
+      throw new NotFoundError('Expense line not found');
     }
 
-    if (expense.status !== ExpenseStatus.DRAFT) {
+    if (line.expense.status !== ExpenseStatus.DRAFT && line.expense.status !== ExpenseStatus.TO_SUBMIT) {
       throw new BadRequestError('Can only update lines on draft expenses');
     }
 
-    const line = await prisma.expenseLine.update({
+    const updated = await prisma.expenseLine.update({
       where: { id: lineId },
       data: {
-        ...(input.description && { description: input.description }),
-        ...(input.amount && { amount: input.amount }),
-        ...(input.currency && { currency: input.currency }),
         ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.amount !== undefined && { amount: input.amount }),
+        ...(input.currency !== undefined && { currency: input.currency }),
         ...(input.vendor !== undefined && { vendor: input.vendor }),
-        ...(input.lineDate && { lineDate: new Date(input.lineDate) }),
+        ...(input.lineDate !== undefined && { lineDate: new Date(input.lineDate) }),
       },
       include: {
         category: true,
       },
     });
 
-    // Update total amount on expense
-    await this.recalculateExpenseTotal(expenseId);
-
-    return line;
+    await this.recalculateExpenseTotal(line.expenseId);
+    return updated;
   }
 
-  async deleteExpenseLine(expenseId: string, lineId: string, userId: string) {
-    const expense = await prisma.expense.findFirst({
-      where: { id: expenseId, creatorId: userId },
+  async deleteLine(lineId: string, userId: string) {
+    const line = await prisma.expenseLine.findUnique({
+      where: { id: lineId },
+      include: {
+        expense: {
+          select: {
+            id: true,
+            creatorId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!line || line.expense.creatorId !== userId) {
+      throw new NotFoundError('Expense line not found');
+    }
+
+    if (line.expense.status !== ExpenseStatus.DRAFT && line.expense.status !== ExpenseStatus.TO_SUBMIT) {
+      throw new BadRequestError('Can only delete lines from draft expenses');
+    }
+
+    await prisma.expenseLine.delete({ where: { id: lineId } });
+    await this.recalculateExpenseTotal(line.expenseId);
+  }
+
+  private async recalculateExpenseTotal(expenseId: string) {
+    const lines = await prisma.expenseLine.findMany({
+      where: { expenseId },
+      select: { amount: true },
+    });
+
+    const total = lines.reduce((sum, line) => sum + Number(line.amount), 0);
+    await prisma.expense.update({
+      where: { id: expenseId },
+      data: { totalAmount: total },
+    });
+  }
+
+  private async getMutableExpense(expenseId: string, userId: string, userRole: string) {
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+      select: {
+        id: true,
+        creatorId: true,
+        status: true,
+      },
     });
 
     if (!expense) {
       throw new NotFoundError('Expense not found');
     }
 
-    if (expense.status !== ExpenseStatus.DRAFT) {
-      throw new BadRequestError('Can only delete lines from draft expenses');
+    const role = userRole as UserRole;
+    const isAdmin =
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.ADMIN ||
+      role === UserRole.FINANCE;
+    if (!isAdmin && expense.creatorId !== userId) {
+      throw new NotFoundError('Expense not found');
     }
 
-    await prisma.expenseLine.delete({
-      where: { id: lineId },
-    });
-
-    // Update total amount on expense
-    await this.recalculateExpenseTotal(expenseId);
-  }
-
-  private async recalculateExpenseTotal(expenseId: string) {
-    const lines = await prisma.expenseLine.findMany({
-      where: { expenseId },
-    });
-
-    const total = lines.reduce((sum, line) => sum + Number(line.amount), 0);
-
-    await prisma.expense.update({
-      where: { id: expenseId },
-      data: { totalAmount: total },
-    });
+    return expense;
   }
 }
 

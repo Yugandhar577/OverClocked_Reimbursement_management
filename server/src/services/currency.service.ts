@@ -22,11 +22,9 @@ interface RestCountryResponse {
   altSpellings?: string[];
 }
 
-// Cache for exchange rates (5 minute TTL)
 const rateCache = new Map<string, { rates: ExchangeRateResponse; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
 
-// Cache for country->currency mapping
 let countryCurrencyMap: Map<string, CurrencyInfo> | null = null;
 
 const normalizeCountryIdentifier = (value: string): string => value.trim().toUpperCase();
@@ -39,15 +37,13 @@ export class CurrencyService {
     }
 
     try {
-      const response = await fetch(
-        `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`
-      );
+      const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${baseCurrency}`);
 
       if (!response.ok) {
         throw new Error(`Exchange rate API error: ${response.status}`);
       }
 
-      const data = await response.json() as ExchangeRateResponse;
+      const data = (await response.json()) as ExchangeRateResponse;
 
       rateCache.set(baseCurrency, {
         rates: data,
@@ -57,7 +53,6 @@ export class CurrencyService {
       return data.rates;
     } catch (error) {
       logger.error('Failed to fetch exchange rates', error);
-      // Return fallback with base rate of 1
       return { [baseCurrency]: 1 };
     }
   }
@@ -94,7 +89,7 @@ export class CurrencyService {
         throw new Error(`RestCountries API error: ${response.status}`);
       }
 
-      const countries = await response.json() as RestCountryResponse[];
+      const countries = (await response.json()) as RestCountryResponse[];
       countryCurrencyMap = new Map();
 
       for (const country of countries) {
@@ -133,7 +128,6 @@ export class CurrencyService {
       return countryCurrencyMap;
     } catch (error) {
       logger.error('Failed to fetch country currencies', error);
-      // Return empty map on error
       return new Map();
     }
   }
@@ -148,7 +142,6 @@ export class CurrencyService {
   }
 
   async getSupportedCurrencies(): Promise<string[]> {
-    // Common currencies
     return [
       'USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK',
       'NZD', 'MXN', 'SGD', 'HKD', 'NOK', 'KRW', 'TRY', 'RUB', 'BRL', 'ZAR',

@@ -1,10 +1,10 @@
-import prisma from '../config/database.js';
 import { Prisma } from '@prisma/client';
+import prisma from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
 import {
+  CompanySettingsInput,
   CreateCompanyInput,
   UpdateCompanyInput,
-  CompanySettingsInput,
 } from '../validators/company.validator.js';
 
 export class CompanyService {
@@ -30,10 +30,12 @@ export class CompanyService {
   }
 
   async update(companyId: string, input: UpdateCompanyInput) {
-    const { settings, ...rest } = input;
     const data: Prisma.CompanyUpdateInput = {
-      ...rest,
-      ...(settings !== undefined ? { settings: settings as Prisma.InputJsonValue } : {}),
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.country !== undefined && { country: input.country }),
+      ...(input.baseCurrency !== undefined && { baseCurrency: input.baseCurrency }),
+      ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
+      ...(input.settings !== undefined && { settings: input.settings as Prisma.InputJsonValue }),
     };
 
     const company = await prisma.company.update({
@@ -58,17 +60,12 @@ export class CompanyService {
 
     return prisma.company.update({
       where: { id: companyId },
-      data: { settings: mergedSettings },
+      data: { settings: mergedSettings as Prisma.InputJsonValue },
     });
   }
 
   async getStats(companyId: string) {
-    const [
-      userCount,
-      departmentCount,
-      categoryCount,
-      expenseStats,
-    ] = await Promise.all([
+    const [userCount, departmentCount, categoryCount, expenseStats] = await Promise.all([
       prisma.user.count({ where: { companyId } }),
       prisma.department.count({ where: { companyId } }),
       prisma.expenseCategory.count({ where: { companyId } }),
