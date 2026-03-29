@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, Building2, LogIn, UserPlus } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { resolveHomePath } from '../../components/auth/AuthGuard.jsx'
 import { useAuthStore } from '../../stores/useAuthStore.js'
 import { Button } from '../../components/ui/button.jsx'
 import { Card, CardDescription, CardHeader, CardTitle } from '../../components/ui/card.jsx'
@@ -38,15 +39,15 @@ export function AuthPage({ mode }) {
   const [signupState, setSignupState] = useState(initialSignupState)
   const [error, setError] = useState('')
   const isSignup = mode === 'signup'
-  const redirectTo = location.state?.from?.pathname ?? '/admin/dashboard'
+  const redirectTo = location.state?.from?.pathname
 
   const handleLoginSubmit = async (event) => {
     event.preventDefault()
     setError('')
 
     try {
-      await login(loginState)
-      navigate(redirectTo, { replace: true })
+      const session = await login(loginState)
+      navigate(redirectTo ?? resolveHomePath(session.user), { replace: true })
     } catch (submitError) {
       setError(getErrorMessage(submitError))
     }
@@ -57,8 +58,8 @@ export function AuthPage({ mode }) {
     setError('')
 
     try {
-      await signup(signupState)
-      navigate('/admin/dashboard', { replace: true })
+      const session = await signup(signupState)
+      navigate(resolveHomePath(session.user), { replace: true })
     } catch (submitError) {
       setError(getErrorMessage(submitError))
     }

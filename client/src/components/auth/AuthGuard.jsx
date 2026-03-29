@@ -2,6 +2,17 @@ import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore.js'
 
+export function resolveHomePath(user) {
+  switch (user?.role) {
+    case 'EMPLOYEE':
+      return '/expenses'
+    case 'MANAGER':
+      return '/approvals'
+    default:
+      return '/admin/dashboard'
+  }
+}
+
 function FullscreenPanel({ eyebrow, title, copy }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f8f2f6_0%,#f4efee_32%,#f7f3f1_100%)] px-6 py-10 text-ink-950">
@@ -18,10 +29,11 @@ function FullscreenPanel({ eyebrow, title, copy }) {
   )
 }
 
-export function RequireAuth({ children }) {
+export function RequireAuth({ children, roles }) {
   const location = useLocation()
   const status = useAuthStore((state) => state.status)
   const bootstrap = useAuthStore((state) => state.bootstrap)
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
     if (status === 'idle') {
@@ -43,12 +55,17 @@ export function RequireAuth({ children }) {
     return <Navigate replace state={{ from: location }} to="/login" />
   }
 
+  if (roles?.length && !roles.includes(user?.role)) {
+    return <Navigate replace to={resolveHomePath(user)} />
+  }
+
   return children
 }
 
 export function GuestOnly({ children }) {
   const status = useAuthStore((state) => state.status)
   const bootstrap = useAuthStore((state) => state.bootstrap)
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
     if (status === 'idle') {
@@ -67,7 +84,7 @@ export function GuestOnly({ children }) {
   }
 
   if (status === 'authenticated') {
-    return <Navigate replace to="/admin/dashboard" />
+    return <Navigate replace to={resolveHomePath(user)} />
   }
 
   return children

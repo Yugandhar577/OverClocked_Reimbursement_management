@@ -1,0 +1,17 @@
+{
+  "name": "OverClocked Reimbursements",
+  "short_name": "Reimburse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf9f8",
+  "theme_color": "#6d4262",
+  "description": "Mobile-first employee and manager reimbursement workspace.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

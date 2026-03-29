@@ -61,6 +61,16 @@
 | `ApprovalTimeline` | Vertical approval history for mobile detail views |
 | `ReceiptViewer` | Image or PDF preview next to form or detail content |
 | `CommentThread` | Send message, log note, and activity tabs |
+| `BottomNavBar` | Role-aware mobile navigation for employee and manager routes |
+| `FileUpload` | Receipt capture hand-off that supports camera or file-picker UX |
+| `SplitExpenseModal` | Mobile-friendly split flow that duplicates one line into multiple reviewable entries |
+
+## Mobile Workflow Notes
+
+- `ScanReceipt` creates a lightweight draft before OCR because the backend receipt upload endpoint requires an existing `expenseId`
+- Mobile expense screens should prefer card stacks, sticky bottom actions, and one-column forms over desktop table patterns
+- Manager mobile routes should reuse the same expense detail components as employees wherever possible, then layer approval actions on top
+- Keep receipt parsing confidence and warnings visible near the form fields that were auto-filled from OCR
 
 ## Form Rules
 
