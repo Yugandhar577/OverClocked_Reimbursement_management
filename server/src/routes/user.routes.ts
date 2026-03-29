@@ -4,7 +4,11 @@ import * as userController from '../controllers/user.controller.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { validateBody } from '../middleware/validate.js';
-import { createUserSchema, updateUserSchema } from '../validators/auth.validator.js';
+import {
+  createUserSchema,
+  finalizeUserImportSchema,
+  updateUserSchema,
+} from '../validators/auth.validator.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -15,6 +19,8 @@ router.use(authenticate);
 router.get('/', userController.getUsers);
 router.get('/hierarchy', userController.getHierarchy);
 router.get('/import-template', requireAdmin, userController.getImportTemplate);
+router.post('/import/preview', requireAdmin, upload.single('file'), userController.previewUserImport);
+router.post('/import/finalize', requireAdmin, validateBody(finalizeUserImportSchema), userController.finalizeUserImport);
 router.post('/import', requireAdmin, upload.single('file'), userController.importUsers);
 router.get('/:id', userController.getUser);
 router.post('/', requireAdmin, validateBody(createUserSchema), userController.createUser);

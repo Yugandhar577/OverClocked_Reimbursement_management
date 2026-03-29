@@ -1,11 +1,25 @@
 import axios from 'axios'
+import { getApiUrl, retryWithNextApiUrl, setActiveApiUrl } from './base-url.js'
 
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+export const API_URL = getApiUrl()
 
 const authClient = axios.create({
-  baseURL: API_URL,
   withCredentials: true,
+  timeout: 1500,
 })
+
+authClient.interceptors.request.use((config) => {
+  config.baseURL = getApiUrl()
+  return config
+})
+
+authClient.interceptors.response.use(
+  (response) => {
+    setActiveApiUrl(response.config.baseURL)
+    return response
+  },
+  (error) => retryWithNextApiUrl(error, authClient),
+)
 
 function unwrap(response) {
   return response.data.data

@@ -24,6 +24,8 @@ Thumbs.db
 # Uploads (local dev)
 uploads/*
 !uploads/.gitkeep
+dev-outbox/*
+!dev-outbox/.gitkeep
 
 # Prisma
 prisma/*.db

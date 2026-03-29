@@ -2,7 +2,7 @@
 
 ## Status
 
-The repo now has a scaffolded `client/` admin frontend in place. The backend is still pending, so the current frontend uses contract-aligned mock APIs while staying within the approved stack below.
+The repository now has both frontend and backend implementations integrated. Frontend API modules call live Express endpoints, and route contracts are documented in `.AI/Context/endpoints.md`.
 
 ## Frontend
 
@@ -15,7 +15,7 @@ The repo now has a scaffolded `client/` admin frontend in place. The backend is 
 - Primitive UI layer: Radix UI primitives wrapped through local shadcn-style components in `client/src/components/ui/*.jsx`
 - Iconography: `lucide-react`
 - Typography: `@fontsource/inter` and `@fontsource/public-sans`
-- HTTP layer: Axios through `client/src/api/*.api.js`, with `resolveMock()` used until backend routes are live
+- HTTP layer: Axios through `client/src/api/*.api.js` against live backend routes
 - Mobile capability: PWA assets for the employee and manager surface
 
 ## Backend
@@ -27,7 +27,8 @@ The repo now has a scaffolded `client/` admin frontend in place. The backend is 
 - Validation: Zod
 - File uploads: Multer
 - Authentication: `jsonwebtoken` plus `bcrypt`
-- Email: Nodemailer with Gmail SMTP during development and demo prep
+- Email: Nodemailer with Gmail SMTP, plus JSON outbox fallback during local demo runs
+- Workbook parsing: `xlsx` for CSV/XLSX employee and demo-dataset imports
 
 ## Database and Infrastructure
 
@@ -46,7 +47,9 @@ The repo now has a scaffolded `client/` admin frontend in place. The backend is 
 | ExchangeRate API | Live FX rates and base-currency conversion |
 | Mindee API | Primary OCR pipeline for structured receipt extraction |
 | OCR.space API | OCR fallback when Mindee is unavailable or exhausted |
+| Local OCR fixtures | Deterministic receipt parsing for demo filenames when OCR keys are placeholders |
 | Razorpay | Reimbursement payout initiation and verification |
+| Mock Razorpay flow | Deterministic local order and signature verification during demo runs |
 
 ## Development Tooling
 
@@ -57,6 +60,7 @@ The repo now has a scaffolded `client/` admin frontend in place. The backend is 
 - API verification: Thunder Client or Postman
 - Browser verification: Chrome DevTools responsive mode
 - Source control: GitHub
+- Local demo email capture: JSON files written to `server/dev-outbox/`
 
 ## Non-Negotiable Conventions
 

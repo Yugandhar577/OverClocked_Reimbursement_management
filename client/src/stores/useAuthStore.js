@@ -14,6 +14,17 @@ const anonymousState = {
   status: 'anonymous',
 }
 
+const BOOTSTRAP_TIMEOUT_MS = 6000
+
+function withTimeout(promise, timeoutMs) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Session bootstrap timed out')), timeoutMs)
+    }),
+  ])
+}
+
 export const useAuthStore = create((set, get) => ({
   ...anonymousState,
   status: 'idle',
@@ -36,8 +47,11 @@ export const useAuthStore = create((set, get) => ({
     set({ status: 'bootstrapping' })
 
     try {
-      const session = await refreshSessionRequest()
-      const user = await getCurrentUserRequest(session.accessToken)
+      const session = await withTimeout(refreshSessionRequest(), BOOTSTRAP_TIMEOUT_MS)
+      const user = await withTimeout(
+        getCurrentUserRequest(session.accessToken),
+        BOOTSTRAP_TIMEOUT_MS,
+      )
 
       set({
         accessToken: session.accessToken,

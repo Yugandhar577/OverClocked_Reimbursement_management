@@ -1,4 +1,6 @@
 import { Search, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getEmployeeDirectory } from '../../api/users.api.js'
 import { AvatarBadge } from '../../components/shared/AvatarBadge.jsx'
 import { LoadingPanel } from '../../components/shared/LoadingPanel.jsx'
@@ -10,6 +12,7 @@ import { Button } from '../../components/ui/button.jsx'
 import { Card, CardDescription, CardHeader, CardTitle } from '../../components/ui/card.jsx'
 import { Input } from '../../components/ui/input.jsx'
 import { useMockResource } from '../../hooks/useMockResource.js'
+import { useAuthStore } from '../../stores/useAuthStore.js'
 
 const roleVariant = {
   Admin: 'default',
@@ -18,11 +21,54 @@ const roleVariant = {
 }
 
 export function EmployeeManagementPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const role = useAuthStore((state) => state.user?.role)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const { data, isLoading } = useMockResource(getEmployeeDirectory, [])
+
+  useEffect(() => {
+    const message = location.state?.createdUserMessage
+
+    if (!message) {
+      return
+    }
+
+    setSuccessMessage(message)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   if (isLoading || !data) {
     return <LoadingPanel />
   }
+
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    if (!query) {
+      return data.rows
+    }
+
+    return data.rows.filter((row) => {
+      const searchable = [
+        row.name,
+        row.email,
+        row.employeeId,
+        row.position,
+        row.department,
+        row.role,
+        row.reportsTo,
+      ]
+
+      return searchable.some((value) => String(value ?? '').toLowerCase().includes(query))
+    })
+  }, [data.rows, searchQuery])
+
+  const totalRows = data.pagination?.total ?? data.rows.length
+  const showingFrom = filteredRows.length ? 1 : 0
+  const showingTo = filteredRows.length
+  const canCreateEmployee = role === 'ADMIN' || role === 'SUPER_ADMIN'
 
   const columns = [
     {
@@ -39,6 +85,7 @@ export function EmployeeManagementPage() {
       ),
     },
     { key: 'employeeId', header: 'Employee ID' },
+    { key: 'position', header: 'Position' },
     { key: 'department', header: 'Department' },
     {
       key: 'role',
@@ -63,12 +110,19 @@ export function EmployeeManagementPage() {
             <>
               <div className="relative min-w-[18rem]">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                <Input className="pl-9" placeholder="Filter employees..." />
+                <Input
+                  className="pl-9"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Filter employees..."
+                  value={searchQuery}
+                />
               </div>
-              <Button>
-                <UserPlus className="h-4 w-4" />
-                Create Employee
-              </Button>
+              {canCreateEmployee ? (
+                <Button onClick={() => navigate('/admin/employees/new')}>
+                  <UserPlus className="h-4 w-4" />
+                  Create Employee
+                </Button>
+              ) : null}
             </>
           }
           description="Manage enterprise access, reporting lines, and department-level visibility."
@@ -117,26 +171,26 @@ export function EmployeeManagementPage() {
         </Reveal>
       </div>
 
+      {successMessage ? (
+        <Reveal>
+          <div className="rounded-[22px] bg-aqua-50 px-4 py-3 text-sm text-aqua-700">
+            {successMessage}
+          </div>
+        </Reveal>
+      ) : null}
+
       <Reveal>
         <DataTable
           columns={columns}
           footer={
             <>
-              <span>Showing 1 to 4 of 1,284 entries</span>
-              <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost">
-                  <span className="text-xs">1</span>
-                </Button>
-                <Button size="icon" variant="ghost">
-                  <span className="text-xs">2</span>
-                </Button>
-                <Button size="icon" variant="ghost">
-                  <span className="text-xs">3</span>
-                </Button>
-              </div>
+              <span>
+                Showing {showingFrom.toLocaleString()} to {showingTo.toLocaleString()} of {totalRows.toLocaleString()} entries
+              </span>
+              <span>Filtered rows: {filteredRows.length.toLocaleString()}</span>
             </>
           }
-          rows={data.rows}
+          rows={filteredRows}
         />
       </Reveal>
     </PageTransition>

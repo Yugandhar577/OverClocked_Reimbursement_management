@@ -32,6 +32,10 @@ export function AdminSidebar() {
   const user = useAuthStore((state) => state.user)
   const brandName = company?.name ?? shellBrand.name
   const subtitle = user?.role ? String(user.role).replaceAll('_', ' ') : shellBrand.subtitle
+  const navItems =
+    user?.role === 'FINANCE'
+      ? primaryNav.filter((item) => item.section !== 'configuration')
+      : primaryNav
 
   return (
     <aside className="surface-soft flex w-full flex-col gap-8 px-5 py-6 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-[17rem] lg:flex-none">
@@ -50,7 +54,7 @@ export function AdminSidebar() {
       </div>
 
       <nav className="space-y-2">
-        {primaryNav.map((item) => {
+        {navItems.map((item) => {
           const Icon = iconMap[item.section] ?? WalletCards
 
           return (

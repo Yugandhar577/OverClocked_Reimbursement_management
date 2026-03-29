@@ -27,6 +27,7 @@ DevY ---> DevSK
 ## Cross-Pillar Rules
 
 - `docs/implementation_plan.md` is the contract for API shapes, route prefixes, and shared status vocabularies
+- `.AI/Context/endpoints.md` is the live endpoint and entrypoint inventory for both frontend and backend
 - Shared client files must be documented in the modifier's `Dev*.md` changelog, and dependent pillars should be called out when the interface changes
 - If a pillar needs another pillar's unfinished API, it should use contract-matching mock data rather than inventing new shapes
 - Planning or documentation changes still count as work sessions and must be logged in the relevant `Dev*.md`

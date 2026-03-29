@@ -5,6 +5,7 @@ import { MobileLayout } from './components/layout/MobileLayout.jsx'
 import { ApprovalRulesPage } from './pages/admin/ApprovalRulesPage.jsx'
 import { CategoriesPage } from './pages/admin/CategoriesPage.jsx'
 import { CsvImportPage } from './pages/admin/CsvImportPage.jsx'
+import { CreateEmployeePage } from './pages/admin/CreateEmployeePage.jsx'
 import { DashboardPage } from './pages/admin/DashboardPage.jsx'
 import { EmployeeManagementPage } from './pages/admin/EmployeeManagementPage.jsx'
 import { ExpensesPage } from './pages/admin/ExpensesPage.jsx'
@@ -57,13 +58,35 @@ export default function App() {
         }
       >
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route
+          path="employees/new"
+          element={
+            <RequireAuth roles={['SUPER_ADMIN', 'ADMIN']}>
+              <CreateEmployeePage />
+            </RequireAuth>
+          }
+        />
         <Route path="employees" element={<EmployeeManagementPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="hierarchy" element={<HierarchyPage />} />
-        <Route path="approval-rules" element={<ApprovalRulesPage />} />
+        <Route
+          path="approval-rules"
+          element={
+            <RequireAuth roles={['SUPER_ADMIN', 'ADMIN']}>
+              <ApprovalRulesPage />
+            </RequireAuth>
+          }
+        />
         <Route path="categories" element={<CategoriesPage />} />
-        <Route path="import" element={<CsvImportPage />} />
+        <Route
+          path="import"
+          element={
+            <RequireAuth roles={['SUPER_ADMIN', 'ADMIN']}>
+              <CsvImportPage />
+            </RequireAuth>
+          }
+        />
         <Route path="payments" element={<PaymentsPage />} />
       </Route>
       <Route

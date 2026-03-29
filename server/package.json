@@ -8,6 +8,8 @@
     "build": "tsc",
     "test": "tsx --test src/**/*.test.ts",
     "start": "node dist/index.js",
+    "demo:import": "tsx scripts/import-apex-dataset.ts",
+    "demo:e2e": "tsx scripts/run-apex-demo.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
@@ -27,6 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.12",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {

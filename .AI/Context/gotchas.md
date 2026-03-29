@@ -34,8 +34,14 @@
 ## Razorpay
 - **Test mode**: Always use Razorpay test keys during development.
 - **Signature verification**: Verify the payment signature server-side before marking an expense as paid.
+- **Order trigger dependency**: `POST /api/payments/order` fails fast when Razorpay env keys are missing.
 
 ## Frontend
 - **Tailwind purge**: Ensure `content` paths in `tailwind.config.js` include all JSX files.
 - **Mobile viewport**: Set the viewport meta tag correctly or the mobile layout will break.
 - **JWT in memory**: Keep the access token in memory and the refresh token in an httpOnly cookie.
+- **RBAC parity**: Keep frontend role gates aligned with backend route guards, especially admin-only config routes.
+- **CSV import contract**: CSV headers must include `email`, `firstname`, and `lastname`; validation should happen before upload.
+
+## API Documentation
+- Keep endpoint changes synced in `.AI/Context/endpoints.md` whenever routes, auth requirements, or entrypoints change.

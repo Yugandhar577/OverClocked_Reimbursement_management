@@ -1,4 +1,3 @@
-import { api } from './http.js'
 import { getNotifications } from './notifications.api.js'
 import { listExpenses } from './expenses.api.js'
 import { listUsers } from './users.api.js'
@@ -29,7 +28,6 @@ export async function getDashboardSummary() {
     listExpenses(),
     getNotifications({ limit: 3 }),
     listUsers(),
-    api.get('/api/companies/stats'),
   ])
 
   const usersById = new Map(users.map((user) => [user.id, user]))

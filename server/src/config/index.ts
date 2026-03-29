@@ -3,6 +3,20 @@ import path from 'path';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
+const isPlaceholderValue = (value?: string) => {
+  const normalized = value?.trim().toLowerCase() ?? '';
+  if (!normalized) {
+    return true;
+  }
+
+  return [
+    'your-',
+    'xxxxxxxx',
+    'example.com',
+    'noreply@example.com',
+  ].some((fragment) => normalized.includes(fragment));
+};
+
 export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
@@ -28,17 +42,29 @@ export const config = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'noreply@example.com',
+    useOutbox:
+      isPlaceholderValue(process.env.SMTP_USER) ||
+      isPlaceholderValue(process.env.SMTP_PASS) ||
+      isPlaceholderValue(process.env.SMTP_FROM),
+    outboxDir: path.join(__dirname, '../../dev-outbox'),
   },
 
   externalApis: {
     mindeeApiKey: process.env.MINDEE_API_KEY || '',
     ocrSpaceApiKey: process.env.OCR_SPACE_API_KEY || '',
+    useDemoFixtures:
+      isPlaceholderValue(process.env.MINDEE_API_KEY) &&
+      isPlaceholderValue(process.env.OCR_SPACE_API_KEY),
   },
 
   payment: {
     razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
     razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
     razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+    useMockGateway:
+      isPlaceholderValue(process.env.RAZORPAY_KEY_ID) ||
+      isPlaceholderValue(process.env.RAZORPAY_KEY_SECRET),
+    mockSecret: process.env.RAZORPAY_MOCK_SECRET || 'local-razorpay-demo-secret',
   },
 
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',

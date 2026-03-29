@@ -1,15 +1,17 @@
 import axios from 'axios'
-import { refreshSessionRequest, API_URL } from './auth.api.js'
+import { refreshSessionRequest } from './auth.api.js'
+import { getApiUrl, retryWithNextApiUrl, setActiveApiUrl } from './base-url.js'
 import { useAuthStore } from '../stores/useAuthStore.js'
 
 export const api = axios.create({
-  baseURL: API_URL,
   withCredentials: true,
+  timeout: 1500,
 })
 
 let refreshPromise = null
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiUrl()
   const token = useAuthStore.getState().accessToken
 
   if (token) {
@@ -20,8 +22,15 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    setActiveApiUrl(response.config.baseURL)
+    return response
+  },
   async (error) => {
+    if (!error.response) {
+      return retryWithNextApiUrl(error, api)
+    }
+
     const originalRequest = error.config
     const status = error.response?.status
 

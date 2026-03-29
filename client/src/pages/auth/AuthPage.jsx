@@ -22,6 +22,10 @@ const initialLoginState = {
 }
 
 function getErrorMessage(error) {
+  if (!error?.response && /network error/i.test(error?.message ?? '')) {
+    return 'Unable to reach the backend API. Start the server or set VITE_API_URL if it is running on a different host or port.'
+  }
+
   return (
     error?.response?.data?.message ??
     error?.message ??

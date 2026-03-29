@@ -34,6 +34,10 @@ export function AdminTopbar() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const currentSection = getSection(location.pathname)
+  const navItems =
+    user?.role === 'FINANCE'
+      ? topNav.filter((item) => item.section !== 'configuration')
+      : topNav
 
   const handleLogout = async () => {
     await logout()
@@ -43,7 +47,7 @@ export function AdminTopbar() {
   return (
     <header className="surface-soft sticky top-4 z-20 flex flex-col gap-4 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
       <nav className="flex flex-wrap items-center gap-2">
-        {topNav.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.href}
             className={cn(

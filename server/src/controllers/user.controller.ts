@@ -147,25 +147,14 @@ export const importUsers = async (
       return;
     }
 
-    const csvContent = req.file.buffer.toString('utf-8');
-    const result = await csvImportService.importUsers(req.user!.companyId, csvContent);
-
-    // Send welcome emails to created users
-    const company = await prisma.company.findUnique({
-      where: { id: req.user!.companyId },
-      select: { name: true },
+    const preview = await csvImportService.previewUsers(req.user!.companyId, {
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
     });
-
-    if (company) {
-      for (const user of result.createdUsers) {
-        await emailService.sendWelcomeEmail(
-          user.email,
-          user.email.split('@')[0],
-          company.name,
-          user.temporaryPassword
-        );
-      }
-    }
+    const result = await csvImportService.finalizeUsersImport(req.user!.companyId, {
+      rows: preview.rows,
+    });
 
     res.json({
       success: true,
@@ -175,6 +164,61 @@ export const importUsers = async (
         errors: result.errors,
       },
       message: `Imported ${result.success} users. ${result.failed} failed.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const previewUserImport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'No file uploaded' });
+      return;
+    }
+
+    const result = await csvImportService.previewUsers(req.user!.companyId, {
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Preview generated for ${result.rows.length} employees.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const finalizeUserImport = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await csvImportService.finalizeUsersImport(req.user!.companyId, req.body);
+
+    res.json({
+      success: true,
+      data: {
+        success: result.success,
+        failed: result.failed,
+        errors: result.errors,
+        createdUsers: result.createdUsers.map((user) => ({
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          position: user.position,
+        })),
+      },
+      message: `Finalized import for ${result.success} employees.`,
     });
   } catch (error) {
     next(error);

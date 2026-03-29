@@ -24,8 +24,25 @@ interface RestCountryResponse {
 
 const rateCache = new Map<string, { rates: ExchangeRateResponse; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
+const FALLBACK_RATES: Record<string, Record<string, number>> = {
+  INR: { INR: 1, AED: 0.0442, EUR: 0.0109, USD: 0.012 },
+  AED: { AED: 1, INR: 22.64, EUR: 0.246, USD: 0.272 },
+  EUR: { EUR: 1, INR: 91.5, AED: 4.07, USD: 1.09 },
+  USD: { USD: 1, INR: 83.25, AED: 3.67, EUR: 0.92 },
+};
 
 let countryCurrencyMap: Map<string, CurrencyInfo> | null = null;
+const FALLBACK_COUNTRY_CURRENCIES = new Map<string, CurrencyInfo>([
+  ['INDIA', { code: 'INR', name: 'Indian Rupee', symbol: '₹' }],
+  ['IN', { code: 'INR', name: 'Indian Rupee', symbol: '₹' }],
+  ['IND', { code: 'INR', name: 'Indian Rupee', symbol: '₹' }],
+  ['UNITED ARAB EMIRATES', { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' }],
+  ['UAE', { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' }],
+  ['DE', { code: 'EUR', name: 'Euro', symbol: '€' }],
+  ['GERMANY', { code: 'EUR', name: 'Euro', symbol: '€' }],
+  ['US', { code: 'USD', name: 'US Dollar', symbol: '$' }],
+  ['UNITED STATES', { code: 'USD', name: 'US Dollar', symbol: '$' }],
+]);
 
 const normalizeCountryIdentifier = (value: string): string => value.trim().toUpperCase();
 
@@ -53,7 +70,7 @@ export class CurrencyService {
       return data.rates;
     } catch (error) {
       logger.error('Failed to fetch exchange rates', error);
-      return { [baseCurrency]: 1 };
+      return FALLBACK_RATES[baseCurrency] ?? { [baseCurrency]: 1 };
     }
   }
 
@@ -67,7 +84,7 @@ export class CurrencyService {
     }
 
     const rates = await this.getExchangeRates(fromCurrency);
-    const rate = rates[toCurrency] || 1;
+    const rate = rates[toCurrency] || FALLBACK_RATES[fromCurrency]?.[toCurrency] || 1;
 
     return {
       convertedAmount: Math.round(amount * rate * 100) / 100,
@@ -134,7 +151,11 @@ export class CurrencyService {
 
   async getCurrencyByCountry(countryCode: string): Promise<CurrencyInfo | null> {
     const map = await this.getCountryCurrencyMap();
-    return map.get(normalizeCountryIdentifier(countryCode)) || null;
+    return (
+      map.get(normalizeCountryIdentifier(countryCode)) ||
+      FALLBACK_COUNTRY_CURRENCIES.get(normalizeCountryIdentifier(countryCode)) ||
+      null
+    );
   }
 
   async getCurrencyForCountry(countryName: string): Promise<CurrencyInfo | null> {

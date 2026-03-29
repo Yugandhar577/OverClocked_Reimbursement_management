@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
@@ -9,22 +11,31 @@ interface EmailOptions {
   text?: string;
 }
 
+const sanitizeFilePart = (value: string) => value.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: false,
-      auth: {
-        user: config.smtp.user,
-        pass: config.smtp.pass,
-      },
-    });
+    this.transporter = config.smtp.useOutbox
+      ? null
+      : nodemailer.createTransport({
+          host: config.smtp.host,
+          port: config.smtp.port,
+          secure: false,
+          auth: {
+            user: config.smtp.user,
+            pass: config.smtp.pass,
+          },
+        });
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
+    if (!this.transporter) {
+      await this.writeOutboxEmail(options);
+      return true;
+    }
+
     try {
       await this.transporter.sendMail({
         from: config.smtp.from,
@@ -36,8 +47,9 @@ export class EmailService {
       logger.info(`Email sent to ${options.to}`);
       return true;
     } catch (error) {
-      logger.error('Failed to send email', error);
-      return false;
+      logger.error('Failed to send email, writing to outbox instead', error);
+      await this.writeOutboxEmail(options);
+      return true;
     }
   }
 
@@ -61,8 +73,17 @@ export class EmailService {
       <p><a href="${config.clientUrl}/login">Click here to login</a></p>
       <p>Best regards,<br>${companyName} Team</p>
     `;
+    const text = [
+      `Welcome to ${companyName}, ${firstName}!`,
+      '',
+      'Your account has been created on the Reimbursement Management System.',
+      `Email: ${to}`,
+      `Temporary Password: ${temporaryPassword}`,
+      `Login URL: ${config.clientUrl}/login`,
+      'Please log in and change your password immediately.',
+    ].join('\n');
 
-    return this.sendEmail({ to, subject, html });
+    return this.sendEmail({ to, subject, html, text });
   }
 
   async sendPasswordResetEmail(
@@ -158,6 +179,32 @@ export class EmailService {
     `;
 
     return this.sendEmail({ to, subject, html });
+  }
+
+  private async writeOutboxEmail(options: EmailOptions) {
+    await fs.mkdir(config.smtp.outboxDir, { recursive: true });
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const safeTo = sanitizeFilePart(options.to);
+    const safeSubject = sanitizeFilePart(options.subject).slice(0, 48) || 'message';
+    const filePath = path.join(config.smtp.outboxDir, `${stamp}-${safeTo}-${safeSubject}.json`);
+
+    await fs.writeFile(
+      filePath,
+      JSON.stringify(
+        {
+          mode: 'outbox',
+          from: config.smtp.from,
+          ...options,
+          createdAt: new Date().toISOString(),
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    logger.info(`Email written to outbox for ${options.to}`, { filePath });
   }
 }
 

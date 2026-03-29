@@ -205,8 +205,12 @@ export class ExpenseService {
 
   async update(expenseId: string, userId: string, userRole: string, input: UpdateExpenseInput) {
     const expense = await this.getMutableExpense(expenseId, userId, userRole);
-    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Can only update draft expenses');
+    if (
+      expense.status !== ExpenseStatus.DRAFT &&
+      expense.status !== ExpenseStatus.TO_SUBMIT &&
+      expense.status !== ExpenseStatus.REJECTED
+    ) {
+      throw new BadRequestError('Can only update draft or rejected expenses');
     }
 
     return prisma.expense.update({
@@ -237,8 +241,12 @@ export class ExpenseService {
 
   async delete(expenseId: string, userId: string, userRole: string) {
     const expense = await this.getMutableExpense(expenseId, userId, userRole);
-    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Can only delete draft expenses');
+    if (
+      expense.status !== ExpenseStatus.DRAFT &&
+      expense.status !== ExpenseStatus.TO_SUBMIT &&
+      expense.status !== ExpenseStatus.REJECTED
+    ) {
+      throw new BadRequestError('Can only delete draft or rejected expenses');
     }
 
     await prisma.expense.delete({ where: { id: expenseId } });
@@ -264,8 +272,12 @@ export class ExpenseService {
       throw new NotFoundError('Expense not found');
     }
 
-    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Can only add lines to draft expenses');
+    if (
+      expense.status !== ExpenseStatus.DRAFT &&
+      expense.status !== ExpenseStatus.TO_SUBMIT &&
+      expense.status !== ExpenseStatus.REJECTED
+    ) {
+      throw new BadRequestError('Can only add lines to draft or rejected expenses');
     }
 
     const line = await prisma.expenseLine.create({
@@ -305,8 +317,12 @@ export class ExpenseService {
       throw new NotFoundError('Expense line not found');
     }
 
-    if (line.expense.status !== ExpenseStatus.DRAFT && line.expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Can only update lines on draft expenses');
+    if (
+      line.expense.status !== ExpenseStatus.DRAFT &&
+      line.expense.status !== ExpenseStatus.TO_SUBMIT &&
+      line.expense.status !== ExpenseStatus.REJECTED
+    ) {
+      throw new BadRequestError('Can only update lines on draft or rejected expenses');
     }
 
     const updated = await prisma.expenseLine.update({
@@ -346,8 +362,12 @@ export class ExpenseService {
       throw new NotFoundError('Expense line not found');
     }
 
-    if (line.expense.status !== ExpenseStatus.DRAFT && line.expense.status !== ExpenseStatus.TO_SUBMIT) {
-      throw new BadRequestError('Can only delete lines from draft expenses');
+    if (
+      line.expense.status !== ExpenseStatus.DRAFT &&
+      line.expense.status !== ExpenseStatus.TO_SUBMIT &&
+      line.expense.status !== ExpenseStatus.REJECTED
+    ) {
+      throw new BadRequestError('Can only delete lines from draft or rejected expenses');
     }
 
     await prisma.expenseLine.delete({ where: { id: lineId } });

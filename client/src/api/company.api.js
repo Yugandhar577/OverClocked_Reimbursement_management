@@ -22,7 +22,7 @@ function mapPerson(node) {
 
   return {
     name: `${node.firstName} ${node.lastName}`.trim(),
-    title: node.email,
+    title: node.position ?? node.email,
     badge: humanizeEnum(node.role),
     initials: getInitials(node.firstName, node.lastName),
   }
@@ -75,21 +75,21 @@ export async function getCsvImportWorkspace() {
   const totalRows = Number(stats.users ?? 0) + Number(stats.departments ?? 0) + Number(stats.categories ?? 0)
 
   return {
-    manifest: 'employee_import.csv',
+    manifest: 'employee-import.xlsx',
     totalRows: formatCompactCount(totalRows),
     readyRows: formatCompactCount(Math.max(totalRows - 1, 0)),
-    criticalError: 'Upload a CSV manifest to validate headers against the live backend.',
+    criticalError: 'Upload an XLSX or CSV employee manifest to preview hierarchy before creating accounts.',
     mappings: [
-      { field: 'Expense Date', mappedTo: 'date_posted', status: 'pending' },
-      { field: 'Total Amount', mappedTo: 'amount_val', status: 'pending' },
-      { field: 'Merchant', mappedTo: 'vendor_name', status: 'pending' },
+      { field: 'Full Name', mappedTo: 'fullName', status: 'mapped' },
+      { field: 'Email', mappedTo: 'email', status: 'mapped' },
+      { field: 'Reports To', mappedTo: 'reportsTo', status: 'mapped' },
     ],
     previewRows: [
-      { date: 'Awaiting file', merchant: 'Upload required', amount: '$0.00', status: 'Error' },
+      { date: 'Awaiting file', merchant: 'Upload required', amount: '-', status: 'Pending' },
     ],
     tips: [
-      'The live backend is ready to accept CSV user imports through the admin import route.',
-      'Download the import template from the server before preparing the employee manifest.',
+      'The preview step extracts roles, positions, and reporting candidates before any accounts are created.',
+      'Finalize the import only after each employee has a valid manager assignment.',
     ],
   }
 }

@@ -1,12 +1,54 @@
 import { api } from './http.js'
 import { average, humanizeEnum } from './transformers.js'
 
+function normalizeRulePayload(payload) {
+  const normalized = {
+    ...payload,
+  }
+
+  if (payload.approvers !== undefined) {
+    normalized.approvers = payload.approvers.map((approver, index) => ({
+      userId: approver.userId,
+      sequence: Number(approver.sequence ?? index + 1),
+      isRequired: Boolean(approver.isRequired),
+    }))
+  }
+
+  if (payload.percentageRequired !== undefined) {
+    normalized.percentageRequired =
+      payload.percentageRequired === null
+        ? null
+        : Number(payload.percentageRequired)
+  }
+
+  if (payload.priority !== undefined) {
+    normalized.priority = Number(payload.priority)
+  }
+
+  return normalized
+}
+
 export async function listApprovalRules(params = {}) {
   const response = await api.get('/api/approval-rules', {
     params,
   })
 
   return response.data.data ?? []
+}
+
+export async function createApprovalRule(payload) {
+  const response = await api.post('/api/approval-rules', normalizeRulePayload(payload))
+  return response.data.data
+}
+
+export async function updateApprovalRule(ruleId, payload) {
+  const response = await api.put(`/api/approval-rules/${ruleId}`, normalizeRulePayload(payload))
+  return response.data.data
+}
+
+export async function deactivateApprovalRule(ruleId) {
+  const response = await api.delete(`/api/approval-rules/${ruleId}`)
+  return response.data.data
 }
 
 export async function getApprovalRulesWorkspace() {

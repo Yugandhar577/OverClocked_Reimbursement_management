@@ -1,19 +1,23 @@
 # MVP Feature Breakdown
 
+## Contract Reference
+
+- The live endpoint and route inventory is documented in `.AI/Context/endpoints.md`.
+
 ## P0 - Must Have (Demo-Critical)
 
 ### Auth & Onboarding
-- [ ] Company signup (name, country -> auto currency)
-- [ ] Login / JWT auth
+- [x] Company signup (name, country -> auto currency)
+- [x] Login / JWT auth
 - [x] Forgot / reset password flow (email token)
-- [ ] CSV employee import -> auto-generate accounts + hierarchy
-- [ ] Welcome email with credentials
+- [x] CSV employee import -> auto-generate accounts + hierarchy
+- [x] Welcome email with credentials
 
 ### Expense Management
-- [ ] Create expense (title, amount, currency, category, date)
+- [x] Create expense (title, amount, currency, category, date)
 - [ ] Add line items (description, amount, vendor, date)
-- [ ] Upload receipt image
-- [ ] OCR scan -> pre-fill expense form (Mindee API)
+- [x] Upload receipt image
+- [x] OCR scan -> pre-fill expense form (Mindee API)
 - [x] Submit expense -> triggers approval
 - [ ] View own expenses with status filters
 - [ ] Status pipeline: Draft -> To Submit -> Submitted -> Approved -> Done
@@ -27,12 +31,12 @@
 
 ### Admin Dashboard
 - [ ] View all expenses (filterable by status + employee)
-- [ ] Manage employees (CRUD + role assignment)
+- [x] Manage employees (CRUD + role assignment)
 - [ ] Manage departments
-- [ ] Manage expense categories (with codes like Odoo)
+- [x] Manage expense categories (with codes like Odoo)
 - [x] Configure approval rules (approvers + sequence + % threshold)
 - [ ] Set approval limits per position
-- [ ] View org hierarchy tree
+- [x] View org hierarchy tree
 
 ## P1 - Should Have (Strong Demo)
 
@@ -44,8 +48,8 @@
 
 ### Expense Features
 - [ ] Expense splitting (like Odoo -> split into sub-line-items)
-- [ ] Multi-currency with live conversion
-- [ ] Currency display in company's base currency
+- [x] Multi-currency with live conversion
+- [x] Currency display in company's base currency
 - [x] Duplicate expense detection (same date + similar amount)
 - [ ] Expense reports -> group multiple expenses into period-based reports
 
@@ -59,6 +63,11 @@
 ### Payments
 - [x] Razorpay integration for reimbursement payouts
 - [x] Payment status tracking (Unpaid -> In Payment -> Paid)
+
+## Validation Notes
+
+- The Apex Solutions workbook onboarding and expense story was exercised end-to-end on 2026-03-29 through `server/scripts/run-apex-demo.ts`.
+- That run covered signup, India -> INR currency defaulting, XLSX preview/finalize import, manager hierarchy confirmation, welcome credential delivery, OCR-assisted submissions, percentage approval, VIP approval shortcut, rejection/resubmission, hierarchy retrieval, company stats, and payment verification.
 
 ## P2 - Could Have (Polish)
 

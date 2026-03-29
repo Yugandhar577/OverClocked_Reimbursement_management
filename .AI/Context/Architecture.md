@@ -2,20 +2,30 @@
 
 ## Overview
 
-OverClocked Reimbursement Management is centered on an Express + Prisma backend with PostgreSQL as the system of record. The backend owns authentication, company setup, receipts/OCR, currency utilities, expense CRUD, and the supporting approval/payment modules layered on top.
+OverClocked Reimbursement Management is a full-stack system with a React + Vite frontend and an Express + Prisma backend backed by PostgreSQL. The backend owns authentication, company setup, receipts/OCR, currency utilities, expense CRUD, approvals, notifications, comments, and payment orchestration.
 
 ## Repository Structure
 
 ```text
 .AI/                         # AI agent rules, architecture notes, changelogs
 docs/                        # Problem statement and implementation notes
+client/
+  src/
+    api/                     # Frontend API layer
+    components/              # Shared and feature UI components
+    pages/                   # Admin and mobile route screens
+    stores/                  # Zustand client state
+  public/                    # PWA files (manifest + service worker)
 server/
+  dev-outbox/                # Local captured emails when SMTP is left in demo mode
   prisma/
     schema.prisma            # Prisma schema source of truth
     migrations/              # Prisma migration history
+  scripts/                   # One-off automation for workbook imports and demo verification
   src/
     config/                  # Env, DB, and app configuration
     controllers/             # Express request handlers
+    demo/                    # Workbook-to-Postgres seed utilities used by demo scripts
     middleware/              # Auth, RBAC, validation, upload, error handling
     routes/                  # Route registration
     services/                # Business logic
@@ -23,6 +33,14 @@ server/
     validators/              # Zod schemas
   uploads/                   # Receipt files in local development
 ```
+
+## Runtime Entrypoints
+
+- Frontend app bootstrap: `client/src/main.jsx`
+- Frontend route tree: `client/src/App.jsx`
+- Backend process bootstrap: `server/src/index.ts`
+- Backend health check: `GET /health`
+- Backend static uploads: `GET /uploads/*`
 
 ## Layers
 
@@ -53,25 +71,31 @@ Notable auth fields on `users`:
 
 - `refresh_token` supports refresh-token rotation/logout.
 - `reset_token` and `reset_token_expiry` support one-time password reset links.
+- `employee_code`, `position`, and `monthly_budget` preserve workbook import metadata for hierarchy setup and approvals.
 
-## Key API Endpoints
+## API Surface
 
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `POST /api/auth/forgot-password`
-- `POST /api/auth/reset-password`
-- `GET /api/auth/me`
-- `GET /api/companies`
-- `GET /api/companies/currencies`
-- `POST /api/receipts/:id/ocr`
+The canonical route and entrypoint inventory is maintained in `.AI/Context/endpoints.md`.
 
-## Backend API Modules (Implemented)
+Implemented route groups include:
 
-- `/api/approvals` - pending approvals and manager approve/reject actions
-- `/api/approval-rules` - approval rules CRUD for admin configuration
-- `/api/payments` - Razorpay order creation and signature verification
-- `/api/notifications` - list and mark-read notification endpoints
-- `/api/comments` - threaded expense comments and replies
+- `/api/auth`
+- `/api/companies`
+- `/api/users`
+- `/api/departments`
+- `/api/categories`
+- `/api/expenses`
+- `/api/receipts`
+- `/api/approvals`
+- `/api/approval-rules`
+- `/api/payments`
+- `/api/notifications`
+- `/api/comments`
+
+The onboarding import flow is now two-step:
+
+1. `POST /api/users/import/preview` parses an uploaded CSV/XLSX roster, extracts positions, departments, and manager references, and returns editable rows without writing to Postgres.
+2. `POST /api/users/import/finalize` persists the confirmed hierarchy, creates accounts, and triggers welcome credential delivery.
 
 ## External Integrations
 
@@ -81,3 +105,9 @@ Notable auth fields on `users`:
 - OCR.space: fallback OCR provider with regex-based post-processing.
 - Razorpay: reimbursement payouts.
 - SMTP via Nodemailer: welcome and password reset emails.
+
+Local demo fallbacks are available when placeholder secrets are left in `.env`:
+
+- Email falls back to JSON files in `server/dev-outbox/`.
+- OCR can return deterministic demo fixtures for known Apex receipt filenames.
+- Payments can use a mock Razorpay-compatible order/signature flow for repeatable local verification.

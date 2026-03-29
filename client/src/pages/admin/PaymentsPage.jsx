@@ -1,5 +1,9 @@
-import { Download, IndianRupee, ShieldCheck, Zap } from 'lucide-react'
-import { getPaymentsQueue } from '../../api/payments.api.js'
+import { Download, IndianRupee, LoaderCircle, ShieldCheck, Zap } from 'lucide-react'
+import { useState } from 'react'
+import {
+  createPaymentOrderRequest,
+  getPaymentsQueue,
+} from '../../api/payments.api.js'
 import { AvatarBadge } from '../../components/shared/AvatarBadge.jsx'
 import { DataTable } from '../../components/shared/DataTable.jsx'
 import { LoadingPanel } from '../../components/shared/LoadingPanel.jsx'
@@ -12,10 +16,89 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx'
 import { useMockResource } from '../../hooks/useMockResource.js'
 
 export function PaymentsPage() {
-  const { data, isLoading } = useMockResource(getPaymentsQueue, [])
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [activeTab, setActiveTab] = useState('All')
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false)
+  const [rowProcessingIds, setRowProcessingIds] = useState([])
+  const [feedbackError, setFeedbackError] = useState('')
+  const [feedbackMessage, setFeedbackMessage] = useState('')
+  const { data, isLoading } = useMockResource(getPaymentsQueue, [refreshKey])
 
   if (isLoading || !data) {
     return <LoadingPanel />
+  }
+
+  const filteredRows = activeTab === 'Unpaid'
+    ? data.rows.filter((row) => row.status === 'Pending Payment')
+    : activeTab === 'Processing'
+      ? data.rows.filter((row) => row.status === 'Processing')
+      : data.rows
+
+  const startRowProcessing = (expenseId) => {
+    setRowProcessingIds((current) => (current.includes(expenseId) ? current : [...current, expenseId]))
+  }
+
+  const stopRowProcessing = (expenseId) => {
+    setRowProcessingIds((current) => current.filter((id) => id !== expenseId))
+  }
+
+  const handleTriggerSingle = async (expenseId) => {
+    setFeedbackError('')
+    setFeedbackMessage('')
+    startRowProcessing(expenseId)
+
+    try {
+      const order = await createPaymentOrderRequest(expenseId)
+      setFeedbackMessage(`Payment initiated. Order ${order.orderId} is now in progress.`)
+      setRefreshKey((value) => value + 1)
+    } catch (error) {
+      setFeedbackError(
+        error?.response?.data?.message ??
+          error?.message ??
+          'Unable to trigger payment for this expense.',
+      )
+    } finally {
+      stopRowProcessing(expenseId)
+    }
+  }
+
+  const handleTriggerBatch = async () => {
+    const readyExpenseIds = data.rows
+      .filter((row) => row.action === 'Trigger')
+      .map((row) => row.id)
+
+    if (!readyExpenseIds.length) {
+      setFeedbackError('No approved expenses are currently ready for payment trigger.')
+      setFeedbackMessage('')
+      return
+    }
+
+    setIsBatchProcessing(true)
+    setFeedbackError('')
+    setFeedbackMessage('')
+
+    let successCount = 0
+    let failedCount = 0
+
+    for (const expenseId of readyExpenseIds) {
+      try {
+        await createPaymentOrderRequest(expenseId)
+        successCount += 1
+      } catch {
+        failedCount += 1
+      }
+    }
+
+    if (failedCount) {
+      setFeedbackError(`${failedCount} payment triggers failed. Check Razorpay configuration and retry.`)
+    }
+
+    if (successCount) {
+      setFeedbackMessage(`${successCount} payment order(s) were initiated successfully.`)
+    }
+
+    setIsBatchProcessing(false)
+    setRefreshKey((value) => value + 1)
   }
 
   const columns = [
@@ -49,10 +132,15 @@ export function PaymentsPage() {
       header: 'Action',
       render: (row) => (
         <Button
+          disabled={row.action !== 'Trigger' || rowProcessingIds.includes(row.id) || isBatchProcessing}
+          onClick={() => handleTriggerSingle(row.id)}
           size="sm"
           variant={row.action === 'Trigger' ? 'secondary' : 'ghost'}
         >
-          {row.action}
+          {rowProcessingIds.includes(row.id) ? (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          ) : null}
+          {row.action === 'Trigger' ? 'Trigger' : 'Locked'}
         </Button>
       ),
     },
@@ -68,7 +156,8 @@ export function PaymentsPage() {
                 <Download className="h-4 w-4" />
                 Download Report
               </Button>
-              <Button size="sm">
+              <Button disabled={isBatchProcessing} onClick={handleTriggerBatch} size="sm">
+                {isBatchProcessing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
                 <Zap className="h-4 w-4" />
                 Trigger Batch Payment
               </Button>
@@ -112,6 +201,18 @@ export function PaymentsPage() {
 
       <Reveal>
         <Card className="p-6">
+          {feedbackError ? (
+            <div className="mb-4 rounded-[20px] bg-red-50 px-4 py-3 text-sm text-red-700">
+              {feedbackError}
+            </div>
+          ) : null}
+
+          {feedbackMessage ? (
+            <div className="mb-4 rounded-[20px] bg-aqua-50 px-4 py-3 text-sm text-aqua-700">
+              {feedbackMessage}
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-ink-950">
@@ -121,7 +222,7 @@ export function PaymentsPage() {
                 Prioritize queue items by payout readiness and integration state.
               </p>
             </div>
-            <Tabs defaultValue={data.tabs[0]}>
+            <Tabs onValueChange={setActiveTab} value={activeTab}>
               <TabsList>
                 {data.tabs.map((tab) => (
                   <TabsTrigger key={tab} value={tab}>
@@ -133,7 +234,7 @@ export function PaymentsPage() {
           </div>
 
           <div className="mt-6">
-            <DataTable rows={data.rows} columns={columns} />
+            <DataTable rows={filteredRows} columns={columns} />
           </div>
         </Card>
       </Reveal>

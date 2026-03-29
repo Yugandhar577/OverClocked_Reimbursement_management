@@ -305,7 +305,11 @@ export class ApprovalEngineService {
 
     if (!expense) throw new NotFoundError('Expense not found');
     if (expense.creatorId !== submitterId) throw new ForbiddenError('You can only submit your own expenses');
-    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.TO_SUBMIT) {
+    if (
+      expense.status !== ExpenseStatus.DRAFT &&
+      expense.status !== ExpenseStatus.TO_SUBMIT &&
+      expense.status !== ExpenseStatus.REJECTED
+    ) {
       throw new BadRequestError('Expense cannot be submitted from its current status');
     }
 
@@ -418,7 +422,7 @@ export class ApprovalEngineService {
     });
 
     const refreshed = await this.getExpenseForApproval(expense.id, companyId);
-    await this.notifyNextApprover(refreshed);
+    await this.notifyPendingApprovers(refreshed, rule);
 
     return { expense: refreshed, duplicateWarnings: duplicates, appliedRuleId: rule?.id ?? null };
   }
@@ -433,15 +437,38 @@ export class ApprovalEngineService {
       include: {
         expense: {
           include: {
-            creator: { select: { id: true, firstName: true, lastName: true, email: true } },
-            approvalSteps: { orderBy: { sequence: 'asc' } },
+            creator: {
+              select: { id: true, firstName: true, lastName: true, email: true, departmentId: true },
+            },
+            approvalSteps: {
+              include: {
+                approver: {
+                  select: {
+                    id: true,
+                    isVipApprover: true,
+                  },
+                },
+              },
+              orderBy: { sequence: 'asc' },
+            },
           },
         },
       },
       orderBy: { expense: { submittedAt: 'asc' } },
     });
 
-    const actionable = steps.filter((step) => this.findFirstPending(step.expense.approvalSteps)?.id === step.id);
+    const actionable: typeof steps = [];
+    for (const step of steps) {
+      const rule = await this.getApplicableRule(
+        companyId,
+        step.expense.creator.departmentId,
+        Number(step.expense.convertedAmount ?? step.expense.totalAmount)
+      );
+
+      if (this.isStepActionable(step.expense.approvalSteps, step.id, rule)) {
+        actionable.push(step);
+      }
+    }
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const start = (page - 1) * limit;
@@ -479,11 +506,11 @@ export class ApprovalEngineService {
 
     const step = expense.approvalSteps.find((row) => row.approverId === approverId && row.action === ApprovalAction.PENDING);
     if (!step) throw new NotFoundError('No pending approval step found for this user');
-    if (this.findFirstPending(expense.approvalSteps)?.id !== step.id) {
-      throw new BadRequestError('This expense is waiting on a different approver');
-    }
 
     const rule = await this.getApplicableRule(companyId, expense.creator.departmentId, Number(expense.convertedAmount ?? expense.totalAmount));
+    if (!this.isStepActionable(expense.approvalSteps, step.id, rule)) {
+      throw new BadRequestError('This expense is waiting on a different approver');
+    }
     const requiredApprovers = new Set((rule?.approvers ?? []).filter((row) => row.isRequired).map((row) => row.userId));
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -550,7 +577,7 @@ export class ApprovalEngineService {
         data: { expenseId: updated.id },
       });
     } else {
-      await this.notifyNextApprover(updated);
+      await this.notifyPendingApprovers(updated, rule);
     }
 
     return updated;
@@ -568,22 +595,58 @@ export class ApprovalEngineService {
     });
   }
 
-  private async notifyNextApprover(expense: any) {
-    const next = this.findFirstPending(expense.approvalSteps);
-    if (!next || !next.approverId) return;
-    await notificationService.createNotification({
-      userId: next.approverId,
-      type: NotificationType.APPROVAL_REQUIRED,
-      title: 'Approval required',
-      message: `Expense "${expense.title}" is waiting for your approval.`,
-      data: { expenseId: expense.id, stepId: next.id },
-    });
+  private async notifyPendingApprovers(expense: any, rule: RuleWithApprovers | null) {
+    const notifiedUsers = new Set<string>();
+    const actionableSteps = expense.approvalSteps.filter((step: any) =>
+      this.isStepActionable(expense.approvalSteps, step.id, rule)
+    );
+
+    for (const step of actionableSteps) {
+      if (!step.approverId || notifiedUsers.has(step.approverId)) {
+        continue;
+      }
+
+      notifiedUsers.add(step.approverId);
+      await notificationService.createNotification({
+        userId: step.approverId,
+        type: NotificationType.APPROVAL_REQUIRED,
+        title: 'Approval required',
+        message: `Expense "${expense.title}" is waiting for your approval.`,
+        data: { expenseId: expense.id, stepId: step.id },
+      });
+    }
   }
 
   private findFirstPending(steps: Array<{ id: string; action: ApprovalAction; sequence?: number; approverId?: string }>) {
     return [...steps]
       .sort((a: any, b: any) => (a.sequence ?? 0) - (b.sequence ?? 0))
       .find((step) => step.action === ApprovalAction.PENDING);
+  }
+
+  private isStepActionable(
+    steps: Array<{
+      id: string;
+      action: ApprovalAction;
+      sequence?: number;
+      approver?: { isVipApprover?: boolean } | null;
+    }>,
+    stepId: string,
+    rule: RuleWithApprovers | null
+  ) {
+    const step = steps.find((candidate) => candidate.id === stepId);
+    if (!step || step.action !== ApprovalAction.PENDING) {
+      return false;
+    }
+
+    if (step.approver?.isVipApprover) {
+      return true;
+    }
+
+    if (rule?.approvalType && rule.approvalType !== ApprovalType.SEQUENTIAL) {
+      return true;
+    }
+
+    return this.findFirstPending(steps)?.id === stepId;
   }
 
   private async buildStepDescriptors(
@@ -657,11 +720,6 @@ export class ApprovalEngineService {
       if (!manager || manager.companyId !== submitter.companyId || visited.has(manager.id)) break;
       visited.add(manager.id);
       depth += 1;
-
-      if (chain.length === 0 && submitter.departmentId && manager.departmentId !== submitter.departmentId) {
-        cursor = manager.reportsToId;
-        continue;
-      }
 
       chain.push(manager);
       const limit = manager.approvalLimit === null ? null : Number(manager.approvalLimit);

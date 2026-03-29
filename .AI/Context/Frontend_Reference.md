@@ -38,6 +38,12 @@
 | Auth | `AuthLayout` | Shared login, signup, and reset flows |
 | Employee and manager mobile | `MobileLayout` | Sticky header and bottom nav, one-column forms, card-first lists |
 
+## Contract Sources
+
+- Frontend route entrypoints and role gates are defined in `client/src/App.jsx`
+- Frontend API modules are defined in `client/src/api/*.api.js`
+- Canonical frontend route map to backend endpoints is maintained in `.AI/Context/endpoints.md`
+
 ## Shared UI Components
 
 | Component | Responsibility |
@@ -52,7 +58,7 @@
 | `MetricCard` | KPI surfaces for admin summaries |
 | `ConfigurationTabs` | Shared switcher across admin configuration routes |
 | `SidebarFilters` | Odoo-style status and employee filter groups |
-| `CSVUploader` | Drag-drop upload, preview, validation summary |
+| `CSVUploader` | Drag-drop CSV/XLSX upload, preview, validation summary |
 | `ApprovalRuleBuilder` | Ordered approver steps, toggles, and thresholds |
 | `OrgChart` | Hierarchy visualization for admin pages |
 | `NotificationBell` | In-app unread indicator and dropdown summary |
@@ -71,6 +77,20 @@
 - Mobile expense screens should prefer card stacks, sticky bottom actions, and one-column forms over desktop table patterns
 - Manager mobile routes should reuse the same expense detail components as employees wherever possible, then layer approval actions on top
 - Keep receipt parsing confidence and warnings visible near the form fields that were auto-filled from OCR
+
+## Access Rules To Preserve
+
+- Admin configuration screens (`/admin/approval-rules`, `/admin/import`) are admin-only surfaces
+- Finance users stay in dashboard, expenses, reports, and payments surfaces
+- Keep role-aware desktop navigation aligned with backend RBAC restrictions
+
+## Admin Import Flow
+
+- The admin import page is a two-step preview/finalize workflow, not a blind one-click import.
+- Uploads must accept both `.csv` and Excel workbooks so the Apex demo roster can be used directly.
+- Preview should surface extracted positions, platform-role defaults, department hints, and manager matches before any users are created.
+- Admins must be able to correct positions and choose each employee's reporting line before finalization.
+- Finalization should clearly communicate that employee credentials have been queued for email delivery.
 
 ## Form Rules
 

@@ -20,8 +20,6 @@ interface RazorpayOrderResponse {
 
 export class PaymentService {
   async createOrder(companyId: string, actorUserId: string, input: CreatePaymentOrderInput) {
-    this.assertRazorpayConfigured();
-
     const expense = await prisma.expense.findFirst({
       where: {
         id: input.expenseId,
@@ -63,29 +61,9 @@ export class PaymentService {
     const amount = Number(expense.convertedAmount ?? expense.totalAmount);
     const amountInMinorUnit = Math.round(amount * 100);
 
-    const orderResponse = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: this.getRazorpayAuthHeader(),
-      },
-      body: JSON.stringify({
-        amount: amountInMinorUnit,
-        currency: company.baseCurrency,
-        receipt: expense.id,
-        notes: {
-          expenseId: expense.id,
-          companyId,
-        },
-      }),
-    });
-
-    if (!orderResponse.ok) {
-      const errorText = await orderResponse.text();
-      throw new InternalServerError(`Razorpay order creation failed: ${errorText || orderResponse.status}`);
-    }
-
-    const order = (await orderResponse.json()) as RazorpayOrderResponse;
+    const order = this.shouldUseMockGateway()
+      ? this.createMockOrder(expense.id, amountInMinorUnit, company.baseCurrency)
+      : await this.createRemoteOrder(companyId, expense.id, amountInMinorUnit, company.baseCurrency);
 
     await prisma.$transaction(async (tx) => {
       await tx.expense.update({
@@ -134,13 +112,12 @@ export class PaymentService {
       amount: order.amount,
       currency: order.currency,
       status: order.status,
-      keyId: config.payment.razorpayKeyId,
+      keyId: this.shouldUseMockGateway() ? 'rzp_demo_local' : config.payment.razorpayKeyId,
+      mockMode: this.shouldUseMockGateway(),
     };
   }
 
   async verifyPayment(companyId: string, actorUserId: string, input: VerifyPaymentInput) {
-    this.assertRazorpayConfigured();
-
     const expense = await prisma.expense.findFirst({
       where: {
         id: input.expenseId,
@@ -168,7 +145,7 @@ export class PaymentService {
     }
 
     const expectedSignature = crypto
-      .createHmac('sha256', config.payment.razorpayKeySecret)
+      .createHmac('sha256', this.shouldUseMockGateway() ? config.payment.mockSecret : config.payment.razorpayKeySecret)
       .update(`${input.razorpayOrderId}|${input.razorpayPaymentId}`)
       .digest('hex');
 
@@ -227,6 +204,56 @@ export class PaymentService {
     if (!config.payment.razorpayKeyId || !config.payment.razorpayKeySecret) {
       throw new BadRequestError('Razorpay is not configured');
     }
+  }
+
+  private shouldUseMockGateway() {
+    return config.payment.useMockGateway;
+  }
+
+  private createMockOrder(expenseId: string, amount: number, currency: string): RazorpayOrderResponse {
+    return {
+      id: `demo_order_${expenseId}`,
+      entity: 'order',
+      amount,
+      amount_paid: 0,
+      amount_due: amount,
+      currency,
+      receipt: expenseId,
+      status: 'created',
+    };
+  }
+
+  private async createRemoteOrder(
+    companyId: string,
+    expenseId: string,
+    amount: number,
+    currency: string
+  ): Promise<RazorpayOrderResponse> {
+    this.assertRazorpayConfigured();
+
+    const orderResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: this.getRazorpayAuthHeader(),
+      },
+      body: JSON.stringify({
+        amount,
+        currency,
+        receipt: expenseId,
+        notes: {
+          expenseId,
+          companyId,
+        },
+      }),
+    });
+
+    if (!orderResponse.ok) {
+      const errorText = await orderResponse.text();
+      throw new InternalServerError(`Razorpay order creation failed: ${errorText || orderResponse.status}`);
+    }
+
+    return (await orderResponse.json()) as RazorpayOrderResponse;
   }
 
   private getRazorpayAuthHeader() {

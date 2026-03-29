@@ -41,13 +41,16 @@ export const changePasswordSchema = z.object({
 });
 
 export const createUserSchema = z.object({
+  employeeCode: z.string().max(64).optional().nullable(),
   email: z.string().email('Invalid email address'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  position: z.string().max(255).optional().nullable(),
   role: z.nativeEnum(UserRole).optional().default('EMPLOYEE'),
   departmentId: z.string().cuid().optional().nullable(),
   reportsToId: z.string().cuid().optional().nullable(),
   phone: z.string().optional().nullable(),
+  monthlyBudget: z.number().positive().optional().nullable(),
   approvalLimit: z.number().positive().optional().nullable(),
   isVipApprover: z.boolean().optional().default(false),
   isRequiredApprover: z.boolean().optional().default(false),
@@ -55,6 +58,27 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = createUserSchema.partial().extend({
   status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).optional(),
+});
+
+export const finalizeUserImportSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        email: z.string().email('Invalid email address'),
+        employeeCode: z.string().max(64).optional().nullable(),
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
+        sourceRole: z.string().optional().nullable(),
+        platformRole: z.nativeEnum(UserRole).optional().nullable(),
+        position: z.string().max(255).optional().nullable(),
+        department: z.string().max(255).optional().nullable(),
+        reportsToEmail: z.string().email().optional().nullable(),
+        reportsToRaw: z.string().max(255).optional().nullable(),
+        phone: z.string().optional().nullable(),
+        monthlyBudget: z.number().positive().optional().nullable(),
+      })
+    )
+    .min(1, 'At least one employee row is required'),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
@@ -65,3 +89,4 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type FinalizeUserImportInput = z.infer<typeof finalizeUserImportSchema>;

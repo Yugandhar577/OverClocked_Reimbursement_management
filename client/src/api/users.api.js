@@ -19,6 +19,73 @@ export async function listUsers(params = {}) {
   }
 }
 
+export async function createUser(payload) {
+  const response = await api.post('/api/users', payload)
+  return response.data.data
+}
+
+export async function listDepartments() {
+  const response = await api.get('/api/departments')
+  return response.data.data ?? []
+}
+
+function getFilenameFromDisposition(contentDisposition, fallback) {
+  const match = /filename="?([^";]+)"?/i.exec(contentDisposition ?? '')
+  return match?.[1] ?? fallback
+}
+
+export async function downloadUserImportTemplate() {
+  const response = await api.get('/api/users/import-template', {
+    responseType: 'blob',
+  })
+
+  return {
+    blob: response.data,
+    filename: getFilenameFromDisposition(
+      response.headers['content-disposition'],
+      'user_import_template.csv',
+    ),
+  }
+}
+
+export async function importUsersCsv(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await api.post('/api/users/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return {
+    result: response.data.data ?? { success: 0, failed: 0, errors: [] },
+    message: response.data.message ?? 'Import completed.',
+  }
+}
+
+export async function previewUsersImport(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await api.post('/api/users/import/preview', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return response.data.data
+}
+
+export async function finalizeUsersImport(rows) {
+  const response = await api.post('/api/users/import/finalize', { rows })
+
+  return {
+    result: response.data.data ?? { success: 0, failed: 0, errors: [], createdUsers: [] },
+    message: response.data.message ?? 'Import finalized.',
+  }
+}
+
 export async function getEmployeeDirectory() {
   const { items, pagination } = await listUsers()
   const total = pagination?.total ?? items.length
@@ -73,7 +140,8 @@ export async function getEmployeeDirectory() {
       id: user.id,
       name: `${user.firstName} ${user.lastName}`.trim(),
       email: user.email,
-      employeeId: `EMP-${user.id.slice(-6).toUpperCase()}`,
+      employeeId: user.employeeCode ?? `EMP-${user.id.slice(-6).toUpperCase()}`,
+      position: user.position ?? 'Unassigned',
       department: user.department?.name ?? 'Unassigned',
       role: toUiRole(user.role),
       reportsTo: user.reportsTo

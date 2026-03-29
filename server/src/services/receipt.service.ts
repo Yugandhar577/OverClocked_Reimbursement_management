@@ -52,6 +52,51 @@ interface OcrSpaceResponse {
   }>;
 }
 
+const DEMO_OCR_FIXTURES: Array<{
+  match: RegExp;
+  result: OcrResult;
+}> = [
+  {
+    match: /priya|nobu|dubai.*dinner/i,
+    result: {
+      vendor: 'Nobu Restaurant, Dubai Mall',
+      amount: 850,
+      total: 850,
+      currency: 'AED',
+      date: '2026-03-15',
+      rawText: 'Nobu Restaurant Dubai Mall AED 850 March 15 2026 Business dinner',
+      confidence: 0.98,
+      warnings: [],
+    },
+  },
+  {
+    match: /arjun|hardware|server/i,
+    result: {
+      vendor: 'Vertex Server Hardware',
+      amount: 45000,
+      total: 45000,
+      currency: 'INR',
+      date: '2026-03-18',
+      rawText: 'Emergency server hardware invoice INR 45000 March 18 2026',
+      confidence: 0.97,
+      warnings: [],
+    },
+  },
+  {
+    match: /gaurav|lunch|team.*lunch/i,
+    result: {
+      vendor: 'Team Lunch Vendor',
+      amount: 12000,
+      total: 12000,
+      currency: 'INR',
+      date: '2026-03-21',
+      rawText: 'Team lunch invoice INR 12000 March 21 2026',
+      confidence: 0.76,
+      warnings: ['Receipt quality is low. Please verify the extracted details before submitting.'],
+    },
+  },
+];
+
 export class ReceiptService {
   async createReceipt(
     expenseId: string,
@@ -138,12 +183,16 @@ export class ReceiptService {
     try {
       let result: OcrResult | null = null;
 
-      if (config.externalApis.mindeeApiKey) {
+      if (!config.externalApis.useDemoFixtures && config.externalApis.mindeeApiKey) {
         result = await this.processMindeeOcr(receipt.filePath);
       }
 
-      if (!result && config.externalApis.ocrSpaceApiKey) {
+      if (!result && !config.externalApis.useDemoFixtures && config.externalApis.ocrSpaceApiKey) {
         result = await this.processOcrSpace(receipt.filePath);
+      }
+
+      if (!result && config.externalApis.useDemoFixtures) {
+        result = this.processDemoFixture(receipt.fileName);
       }
 
       if (result) {
@@ -279,6 +328,18 @@ export class ReceiptService {
       logger.error('OCR.space error', error);
       return null;
     }
+  }
+
+  private processDemoFixture(fileName: string): OcrResult | null {
+    const fixture = DEMO_OCR_FIXTURES.find((candidate) => candidate.match.test(fileName));
+    if (!fixture) {
+      return null;
+    }
+
+    return {
+      ...fixture.result,
+      warnings: [...(fixture.result.warnings ?? [])],
+    };
   }
 
   async getReceiptUrl(receiptId: string): Promise<string> {

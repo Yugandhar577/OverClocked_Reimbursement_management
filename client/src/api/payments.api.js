@@ -1,5 +1,6 @@
 import { listExpenses } from './expenses.api.js'
 import { listUsers } from './users.api.js'
+import { api } from './http.js'
 import {
   formatMoney,
   formatShortDate,
@@ -67,4 +68,14 @@ export async function getPaymentsQueue() {
       }
     }),
   }
+}
+
+export async function createPaymentOrderRequest(expenseId) {
+  const response = await api.post('/api/payments/order', { expenseId })
+  return response.data.data
+}
+
+export async function verifyPaymentRequest(payload) {
+  const response = await api.post('/api/payments/verify', payload)
+  return response.data.data
 }
