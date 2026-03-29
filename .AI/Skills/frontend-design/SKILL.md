@@ -1,42 +1,81 @@
 ---
 name: frontend-design
-description: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
+description: Repo-specific frontend design guidance for the OverClocked reimbursement system. Use when building or refining admin desktop pages, shared auth screens, or the mobile-first employee and manager flows. Keep all UI decisions aligned with `.AI/Context/Frontend_Reference.md`, `.AI/Context/MVP.md`, and `docs/implementation_plan.md`.
 license: Complete terms in LICENSE.txt
 ---
 
-This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
+# Reimbursement Frontend Design
 
-The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
+## Read First
 
-## Design Thinking
+- `.AI/AGENT.md`
+- `.AI/Context/Frontend_Reference.md`
+- `.AI/Context/MVP.md`
+- `docs/implementation_plan.md`
 
-Before coding, understand the context and commit to a BOLD aesthetic direction:
-- **Purpose**: What problem does this interface solve? Who uses it?
-- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. There are so many flavors to choose from. Use these for inspiration but design one that is true to the aesthetic direction.
-- **Constraints**: Technical requirements (framework, performance, accessibility).
-- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+If this skill conflicts with those files, the canonical docs win.
 
-**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work - the key is intentionality, not intensity.
+## Product Direction
 
-Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
-- Production-grade and functional
-- Visually striking and memorable
-- Cohesive with a clear aesthetic point-of-view
-- Meticulously refined in every detail
+OverClocked has two frontend surfaces that should feel related but not identical:
 
-## Frontend Aesthetics Guidelines
+- Admin and finance: Odoo-inspired operations UI with dense information, strong filters, fast table workflows, and clear status visibility
+- Employee and manager: mobile-first flows with large touch targets, clear progression, camera or upload-first receipt capture, and obvious approval actions
 
-Focus on:
-- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics; unexpected, characterful font choices. Pair a distinctive display font with a refined body font.
-- **Color & Theme**: Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
-- **Motion**: Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (animation-delay) creates more delight than scattered micro-interactions. Use scroll-triggering and hover states that surprise.
-- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density.
-- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, custom cursors, and grain overlays.
+The goal is not generic creativity. The goal is a polished, reliable reimbursement product that feels deliberate, operational, and easy to navigate under pressure.
 
-NEVER use generic AI-generated aesthetics like overused font families (Inter, Roboto, Arial, system fonts), cliched color schemes (particularly purple gradients on white backgrounds), predictable layouts and component patterns, and cookie-cutter design that lacks context-specific character.
+## When To Use
 
-Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
+- Building a new page, screen, modal, or shared component
+- Refining layout, hierarchy, copy, or interaction quality
+- Translating the implementation plan into concrete UI structure
+- Normalizing desktop and mobile patterns so both route groups feel like one product
 
-**IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
+## Core Design Rules
 
-Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+### Shared Principles
+
+- Prioritize clarity over novelty
+- Use visible labels, helper text, and explicit section headings
+- Every workflow needs loading, empty, success, and failure states
+- Status must be understandable without relying on color alone
+- Preserve the documented route contract and shared component names
+
+### Admin Surface
+
+- Favor scanability, fast actions, and table-first information density
+- Use summary cards, sidebar filters, status badges, and drill-down tables deliberately
+- Keep important actions visible without burying them in menus
+- Make destructive and finance-sensitive actions explicit
+
+### Mobile Surface
+
+- Keep flows single-column and thumb-friendly
+- Put primary actions near the bottom of the viewport when possible
+- Break long forms into clear sections
+- Make receipt preview, OCR review, and approval history easy to inspect on narrow screens
+
+## Layout And Component Guidance
+
+- Auth flows use `AuthLayout`
+- Admin flows use `DesktopLayout`
+- Employee and manager flows use `MobileLayout`
+- Shared components should stay reusable by behavior, not by forcing identical styling on every surface
+- When in doubt, prefer the component contracts already named in `.AI/Context/Frontend_Reference.md`
+
+## Before You Ship UI
+
+Check that the screen:
+
+- matches the route and ownership defined in `docs/implementation_plan.md`
+- uses the documented status vocabulary
+- routes API access through `client/src/api/*.api.js`
+- keeps global state in Zustand only when multiple routes truly share it
+- works on desktop for admin pages and in Chrome mobile emulation for employee or manager flows
+
+## Do Not Do
+
+- Do not import a different design language that fights the Odoo-inspired admin direction
+- Do not invent new route groups or status labels without updating the implementation plan
+- Do not hide critical state behind hover-only or color-only cues
+- Do not use inline styles, CSS modules, Redux, or app-wide Context API

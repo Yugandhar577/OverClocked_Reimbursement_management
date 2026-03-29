@@ -1,75 +1,53 @@
-# DevP — Pillar 4: Frontend — Employee/Manager Mobile App
+# DevP - Pillar 4: Frontend - Employee and Manager App
 
 ## Ownership
-**All employee and manager-facing pages rendered in the MobileLayout (PWA).**
+
+Owns all employee and manager-facing mobile-first routes, receipt capture flows, and mobile shared components.
 
 ## Scope
-- MobileLayout component (bottom nav bar + header)
-- PWA setup (manifest.json, service worker)
-- Camera/file-picker integration for receipt scanning
 
-### Employee Pages
-- **MyExpenses** — Expense list with summary header ($X to submit ▸ $X under validation ▸ $X to reimburse), status filter tabs
-- **NewExpense** — Expense creation form (title, amount, currency selector, category, date, vendor, line items, receipt upload)
-- **ExpenseDetail** — Full view with status pipeline, receipt preview panel, approval timeline, comment thread
-- **SplitExpense** — Split modal (table: description, product, amount, tax, employee + "Add a line")
-- **ScanReceipt** — Camera/upload → OCR → preview parsed data → confirm & auto-fill form
+- `MobileLayout` and bottom navigation
+- Employee expense list, create, detail, split, and receipt-scan pages
+- Manager approval queue, approval detail, and team-expense pages
+- Mobile-first shared components such as expense cards, forms, timelines, pipelines, and receipt viewers
+- PWA-oriented concerns such as manifest, service worker, and camera or file-picker UX
 
-### Manager Pages
-- **ApprovalQueue** — Pending expenses with employee info, amount, status
-- **ApprovalDetail** — Expense detail view + approve/reject buttons + comment box
-- **TeamExpenses** — All team expenses with filters
+## Core Screens
 
-### Components
-- ExpenseCard (mobile card layout)
-- ExpenseForm (responsive)
-- ExpenseLineItem (add/edit/delete line items)
-- SplitExpenseModal
-- ApprovalTimeline (vertical step tracker with approver names + status)
-- ReceiptViewer (image/PDF viewer panel)
-- CommentThread (Send message / Log note tabs)
-- ExpenseSummaryHeader (dollar amounts with arrow flow)
-- StatusPipeline (horizontal stepper: To Report → Done)
-- BottomNavBar (Employee: Expenses | Scan | Profile; Manager: Approvals | Team | Profile)
-- CurrencyDisplay (amount with currency code)
-- FileUpload (drag-drop or camera)
+- `MyExpenses` - employee list plus summary header and status filtering
+- `NewExpense` - draft creation with currency, category, line items, and upload
+- `ExpenseDetail` - status pipeline, receipt preview, comments, and history
+- `SplitExpense` - split flow for itemized receipts
+- `ScanReceipt` - camera or upload to OCR review flow
+- `ApprovalQueue` - manager pending approvals
+- `ApprovalDetail` - manager action view with approve or reject path
+- `TeamExpenses` - team-wide expense visibility
 
-## Key Files
-```
-client/src/layouts/MobileLayout.jsx
-client/public/manifest.json
-client/public/sw.js
-client/src/pages/employee/*
-client/src/pages/manager/*
-client/src/components/expense/*
-client/src/components/layout/BottomNavBar.jsx
-client/src/hooks/useMediaQuery.js
-client/src/hooks/useCurrency.js
-client/src/api/expense.api.js
-client/src/api/approval.api.js
-client/src/api/payment.api.js
-client/src/stores/expenseStore.js
-client/src/stores/approvalStore.js
-```
+## Shared Components
 
-## Dependencies
-- DevY APIs for: auth, expenses, receipts, OCR, currencies
-- DevSK APIs for: approvals, comments, notifications
+- `ExpenseCard`
+- `ExpenseForm`
+- `ExpenseLineItem`
+- `SplitExpenseModal`
+- `ApprovalTimeline`
+- `ReceiptViewer`
+- `CommentThread`
+- `ExpenseSummaryHeader`
+- `StatusPipeline`
+- `BottomNavBar`
+- `CurrencyDisplay`
+- `FileUpload`
 
-## Blocked By
-- DevY (expense + receipt APIs)
-- Can start with mock data while APIs are being built
+## Must Keep Synced
 
-## Blocks
-- Nothing (DevSM works in parallel)
-
----
+- `.AI/Context/Frontend_Reference.md`
+- `.AI/Context/MVP.md`
+- `docs/implementation_plan.md`
+- `.AI/Tasks/DevP.md`
 
 ## Changelog
 
-> **Format**: Each entry records date, what was done, files touched.
-> AI agents: append to this section after every code session.
-
 | Date | Action | Files Changed | Notes |
 |------|--------|---------------|-------|
-| | | | |
+| 2026-03-29 | Updated the mobile app brief and shared scope docs to align with the canonical agent rules and implementation plan | `.AI/Context/Frontend_Reference.md`, `.AI/Context/MVP.md`, `docs/implementation_plan.md`, `.AI/Tasks/DevP.md` | Documentation-only update |
+| 2026-03-29 | Rewrote mobile and shared frontend helper skills so they follow the employee and manager route contract, testing expectations, and canonical doc precedence | `AGENT.md`, `.AI/AGENT.md`, `README.md`, `.AI/Skills/frontend-design/SKILL.md`, `.AI/Skills/frontend-design/react-frontend.md`, `.AI/Skills/webapp-testing/SKILL.md`, `.AI/Tasks/DevP.md` | Documentation-only update |

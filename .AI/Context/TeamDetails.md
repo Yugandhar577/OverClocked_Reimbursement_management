@@ -2,31 +2,31 @@
 
 ## Team: OverClocked
 
-| Dev ID | File | Pillar | Scope |
-|--------|------|--------|-------|
-| DevY | `.AI/Tasks/DevY.md` | **Pillar 1: Backend Core + Database** | Prisma schema, Express setup, auth, RBAC, all CRUD APIs, CSV import, email service |
-| DevSK | `.AI/Tasks/DevSK.md` | **Pillar 2: Approval Engine + Payments** | Approval workflow engine, approval rules API, Razorpay integration, notification system, audit logging |
-| DevSM | `.AI/Tasks/DevSM.md` | **Pillar 3: Frontend — Admin Dashboard (Desktop)** | All admin pages, org chart, CSV upload UI, approval rule builder, expense list with filters, analytics, payment management |
-| DevP | `.AI/Tasks/DevP.md` | **Pillar 4: Frontend — Employee/Manager Mobile App** | All employee/manager pages, expense form, OCR scan flow, approval queue, comment thread, receipt viewer, status pipeline, PWA |
+| Dev ID | Pillar | Primary Scope | Must Keep In Sync |
+|--------|--------|---------------|-------------------|
+| `DevY` | Backend Core + Database | Prisma schema, auth, RBAC, CRUD APIs, CSV import, OCR integration points, email and currency services | `Architecture.md`, `Techstack.md`, `docs/implementation_plan.md`, `DevY.md` |
+| `DevSK` | Approval Engine + Payments | Approval rules, approval execution, comments, notifications, audit logging, Razorpay payment flow | `gotchas.md`, `docs/implementation_plan.md`, `DevSK.md` |
+| `DevSM` | Admin Dashboard | Desktop layouts, auth screens, admin pages, admin shared UI, desktop state and API wiring | `Frontend_Reference.md`, `MVP.md`, `docs/implementation_plan.md`, `DevSM.md` |
+| `DevP` | Employee and Manager App | Mobile layouts, expense submission, OCR review flow, approval queue, comments, mobile shared UI, PWA concerns | `Frontend_Reference.md`, `MVP.md`, `docs/implementation_plan.md`, `DevP.md` |
 
-## Work Distribution Rationale
+## Delivery Order
 
-Each developer owns an **entire vertical slice** — they are responsible for the complete feature set within their pillar, from data layer to UI or from API to business logic. This minimizes cross-dependencies and allows parallel development.
+1. DevY builds the schema, auth, and base APIs
+2. DevSK builds approval, notifications, comments, and payment workflows on top of DevY foundations
+3. DevSM and DevP work in parallel against the same API contracts, using mock data when endpoints are not ready yet
 
-### Dependency Graph
+## Dependency Graph
+
+```text
+DevY ---> DevSK
+  |         |
+  +--> DevSM
+  `--> DevP
 ```
-DevY (Backend Core) ──→ DevSK (Approval + Payments)
-       ↓                        ↓
-DevSM (Admin Frontend)    DevP (Mobile Frontend)
-```
 
-- DevY builds the foundation first (schema, auth, basic APIs)
-- DevSK depends on DevY's user/expense tables to build approval engine
-- DevSM and DevP depend on completed APIs from DevY and DevSK
-- DevSM and DevP work in parallel on different layouts/routes
+## Cross-Pillar Rules
 
-## Communication Protocol
-
-- All API contracts are defined in the implementation plan
-- If an API isn't ready yet, frontend devs should use mock data that matches the schema
-- All devs update their Dev*.md changelog after each coding session
+- `docs/implementation_plan.md` is the contract for API shapes, route prefixes, and shared status vocabularies
+- Shared client files must be documented in the modifier's `Dev*.md` changelog, and dependent pillars should be called out when the interface changes
+- If a pillar needs another pillar's unfinished API, it should use contract-matching mock data rather than inventing new shapes
+- Planning or documentation changes still count as work sessions and must be logged in the relevant `Dev*.md`

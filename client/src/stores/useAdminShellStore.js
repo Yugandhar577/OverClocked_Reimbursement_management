@@ -1,0 +1,15 @@
+import { create } from 'zustand'
+
+export const useAdminShellStore = create((set) => ({
+  globalSearch: '',
+  setGlobalSearch: (value) => set({ globalSearch: value }),
+  activeRange: 'last-30-days',
+  setActiveRange: (value) => set({ activeRange: value }),
+  notifications: [],
+  unreadCount: 0,
+  setNotifications: (notifications, unreadCount = notifications.length) =>
+    set({ notifications, unreadCount }),
+  isCategoryDialogOpen: false,
+  openCategoryDialog: () => set({ isCategoryDialogOpen: true }),
+  closeCategoryDialog: () => set({ isCategoryDialogOpen: false }),
+}))
