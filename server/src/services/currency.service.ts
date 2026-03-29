@@ -34,7 +34,7 @@ export class CurrencyService {
         throw new Error(`Exchange rate API error: ${response.status}`);
       }
 
-      const data: ExchangeRateResponse = await response.json();
+      const data = (await response.json()) as ExchangeRateResponse;
 
       rateCache.set(baseCurrency, {
         rates: data,
@@ -81,7 +81,10 @@ export class CurrencyService {
         throw new Error(`RestCountries API error: ${response.status}`);
       }
 
-      const countries = await response.json();
+      const countries = (await response.json()) as Array<{
+        name: { common: string };
+        currencies?: Record<string, { name: string; symbol?: string }>;
+      }>;
       countryCurrencyMap = new Map();
 
       for (const country of countries) {
