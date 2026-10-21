@@ -1,5 +1,7 @@
 # OverClocked Reimbursement Management
 
+> 🏆 **Hackathon Winner** — Winning project for the Odooxvitpune hackathon
+
 Documentation-first planning repository for the Odoo reimbursement management hackathon.
 
 ## Product Summary
